@@ -21,7 +21,7 @@
 #define mqtt_topic_sub "attendance/response"
 #define mqtt_user "nhodennn"
 #define mqtt_pwd "Abccbdewn"
-#define buzz 27
+
 char data[50];
 const uint16_t mqtt_port = 1883;
 char resp[30];
@@ -44,7 +44,7 @@ MFRC522::StatusCode status;
 // Defined pins to module RC522
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
-extern LiquidCrystal_I2C lcd(LCD_ADDRESS,LCD_COLUMN,LCD_ROW);
+extern LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMN, LCD_ROW);
 
 void readingData();
 void writingData(byte buffer[MAX_SIZE_BLOCK]);
@@ -54,8 +54,7 @@ void reconnect();
 const char *dataCombine(const char *uid, const char *state);
 char *string2char(String command);
 //void scrollSingleLine(String str1, String str2, int *flag);
-void correctBuzz();
-void wrongBuzz();
+
 void setup()
 {
   setup_wifi();
@@ -68,7 +67,7 @@ void setup()
   {
     dateTime = NTPch.getNTPtime(7.0, 0);
   }
-  RTC.adjust(DateTime(dateTime.year, dateTime.month, dateTime.day,dateTime.hour,dateTime.minute,dateTime.second));
+  RTC.adjust(DateTime(dateTime.year, dateTime.month, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second));
   DateTime now = RTC.now();
   Serial.print(now.year(), DEC); // Năm
   Serial.print('/');
@@ -87,7 +86,7 @@ void setup()
   lcd.backlight();
   lcd.setCursor(1, 0);
   lcd.print("Mandevices Lab");
-  pinMode(buzz, OUTPUT);
+  pinMode(BUZZ_PIN,OUTPUT);
 
   Serial.begin(9600);
   SPI.begin();
@@ -196,14 +195,14 @@ void readingData()
     byte buffer2[MAX_SIZE_BLOCK] = "In";
     client.publish(mqtt_topic_pub, dataCombine(string2char(userid), "In"));
     writingData(buffer2);
-    oneLineBack("Welcome!!",1000);
+    oneLineBack("Welcome!!", 1000);
   }
   else
   {
     byte buffer2[MAX_SIZE_BLOCK] = "Out";
     client.publish(mqtt_topic_pub, dataCombine(string2char(userid), "Out"));
     writingData(buffer2);
-    oneLineBack("See you again!",1000);
+    oneLineBack("See you again!", 1000);
   }
 }
 
@@ -274,15 +273,15 @@ void callback(char *topic, byte *payload, unsigned int length)
   switch (code)
   {
   case 0:
-    oneLineBack("No connection!!",1000);
+    oneLineBack("No connection!!", 1000);
     break;
   case 1:
     wrongBuzz();
-    oneLineback("Not available!",1000);
+    oneLineback("Not available!", 1000);
     break;
   case 2:
     correctBuzz();
-    oneLineBack("Assign Successfull",1000);
+    oneLineBack("Assign Successfull", 1000);
     break;
   case 3:
     wrongBuzz();
@@ -329,7 +328,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     turnBackDefault();
     break;
   }
-  case 6 :
+  case 6:
     wrongBuzz();
     lcd.clear();
     lcd.setCursor(1, 0);
@@ -342,7 +341,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     break;
   default:
     wrongBuzz();
-    oneLineBack("Undefined Error",1000);
+    oneLineBack("Undefined Error", 1000);
     break;
   }
 }
@@ -389,27 +388,4 @@ char *string2char(String command)
   }
 }
 
-void correctBuzz()
-{
-  digitalWrite(buzz, 1);
-  delay(500);
-  digitalWrite(buzz, 0);
-}
-void wrongBuzz()
-{
-  digitalWrite(buzz, 1);
-  delay(300);
-  digitalWrite(buzz, 0);
-  delay(60);
-  digitalWrite(buzz,1);
-  delay(100);
-  digitalWrite(buzz,0);
-  delay(60);
-  digitalWrite(buzz,1);
-  delay(100);
-  digitalWrite(buzz,0);
-  delay(60);
-  digitalWrite(buzz, 1);
-  delay(300);
-  digitalWrite(buzz,0);
-}
+
