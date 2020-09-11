@@ -8,6 +8,7 @@
 #include <NTPtimeESP.h>
 #include <RTClib.h>
 #include "display_lcd.h"
+#include "buzz.h"
 
 #define SS_PIN 21
 #define RST_PIN 22
@@ -277,7 +278,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     break;
   case 1:
     wrongBuzz();
-    oneLineback("Not available!", 1000);
+    oneLineBack("Not available!", 1000);
     break;
   case 2:
     correctBuzz();
