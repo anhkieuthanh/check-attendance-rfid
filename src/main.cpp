@@ -1,4 +1,3 @@
-#include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 #include <MFRC522.h>
 #include <SPI.h>
@@ -8,6 +7,7 @@
 #include <ArduinoJson.h>
 #include <NTPtimeESP.h>
 #include <RTClib.h>
+#include "display_lcd.h"
 
 #define SS_PIN 21
 #define RST_PIN 22
@@ -27,8 +27,8 @@ const uint16_t mqtt_port = 1883;
 char resp[30];
 
 // just some reference flags for scroll lcd funtion
-int stringStart = 0, stringStop = 0;
-int scrollCursor = 16;
+// int stringStart = 0, stringStop = 0;
+// int scrollCursor = 16;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -44,7 +44,7 @@ MFRC522::StatusCode status;
 // Defined pins to module RC522
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
-LiquidCrystal_I2C lcd(0x3F, 16, 2);
+extern LiquidCrystal_I2C lcd(LCD_ADDRESS,LCD_COLUMN,LCD_ROW);
 
 void readingData();
 void writingData(byte buffer[MAX_SIZE_BLOCK]);
@@ -53,7 +53,7 @@ void callback(char *topic, byte *payload, unsigned int length);
 void reconnect();
 const char *dataCombine(const char *uid, const char *state);
 char *string2char(String command);
-void scrollSingleLine(String str1, String str2, int *flag);
+//void scrollSingleLine(String str1, String str2, int *flag);
 void correctBuzz();
 void wrongBuzz();
 void setup()
@@ -61,14 +61,14 @@ void setup()
   setup_wifi();
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
-  //Write time from server for DS1307
-  Wire.begin(4, 25);
+  Wire.begin(5, 17);
   RTC.begin();
+  dateTime = NTPch.getNTPtime(7.0, 0);
   while (!dateTime.valid)
   {
     dateTime = NTPch.getNTPtime(7.0, 0);
   }
-  RTC.adjust(DateTime(dateTime.year, dateTime.month, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second));
+  RTC.adjust(DateTime(dateTime.year, dateTime.month, dateTime.day,dateTime.hour,dateTime.minute,dateTime.second));
   DateTime now = RTC.now();
   Serial.print(now.year(), DEC); // Năm
   Serial.print('/');
@@ -83,9 +83,6 @@ void setup()
   Serial.print(now.second(), DEC); // Giây
   Serial.println();
   delay(1000); // Delay
-
-  //use the lcd
-  Wire.begin(5, 17);
   lcd.init();
   lcd.backlight();
   lcd.setCursor(1, 0);
@@ -199,30 +196,14 @@ void readingData()
     byte buffer2[MAX_SIZE_BLOCK] = "In";
     client.publish(mqtt_topic_pub, dataCombine(string2char(userid), "In"));
     writingData(buffer2);
-    lcd.clear();
-    lcd.setCursor(1, 0);
-    lcd.print("Mandevices Lab");
-    lcd.setCursor(4, 1);
-    lcd.print("Welcome!");
-    delay(1000);
-    lcd.clear();
-    lcd.setCursor(1, 0);
-    lcd.print("Mandevices Lab");
+    oneLineBack("Welcome!!",1000);
   }
   else
   {
     byte buffer2[MAX_SIZE_BLOCK] = "Out";
     client.publish(mqtt_topic_pub, dataCombine(string2char(userid), "Out"));
     writingData(buffer2);
-    lcd.clear();
-    lcd.setCursor(1, 0);
-    lcd.print("Mandevices Lab");
-    lcd.setCursor(1, 1);
-    lcd.print("See you again!");
-    delay(1000);
-    lcd.clear();
-    lcd.setCursor(1, 0);
-    lcd.print("Mandevices Lab");
+    oneLineBack("See you again!",1000);
   }
 }
 
@@ -293,32 +274,15 @@ void callback(char *topic, byte *payload, unsigned int length)
   switch (code)
   {
   case 0:
-    lcd.setCursor(1, 1);
-    lcd.print("No connection!");
-    delay(2000);
-    lcd.clear();
-    lcd.setCursor(1, 0);
-    lcd.print("Mandevices Lab");
+    oneLineBack("No connection!!",1000);
     break;
   case 1:
     wrongBuzz();
-    lcd.clear();
-    lcd.setCursor(0, 1);
-    lcd.print("Not available!");
-    delay(2000);
-    lcd.clear();
-    lcd.setCursor(1, 0);
-    lcd.print("Mandevices Lab");
+    oneLineback("Not available!",1000);
     break;
   case 2:
     correctBuzz();
-    lcd.clear();
-    lcd.setCursor(0, 7);
-    lcd.print("Assign Successful");
-    delay(2000);
-    lcd.clear();
-    lcd.setCursor(1, 0);
-    lcd.print("Mandevices Lab");
+    oneLineBack("Assign Successfull",1000);
     break;
   case 3:
     wrongBuzz();
@@ -331,9 +295,7 @@ void callback(char *topic, byte *payload, unsigned int length)
         break;
     }
     delay(2000);
-    lcd.clear();
-    lcd.setCursor(1, 0);
-    lcd.print("Mandevices Lab");
+    turnBackDefault();
     break;
   case 4:
     wrongBuzz();
@@ -346,9 +308,7 @@ void callback(char *topic, byte *payload, unsigned int length)
         break;
     }
     delay(2000);
-    lcd.clear();
-    lcd.setCursor(1, 0);
-    lcd.print("Mandevices Lab");
+    turnBackDefault();
     break;
   case 5:
   {
@@ -366,8 +326,7 @@ void callback(char *topic, byte *payload, unsigned int length)
       if (flag == 1)
         break;
     }
-    lcd.setCursor(1, 0);
-    lcd.print("Mandevices Lab");
+    turnBackDefault();
     break;
   }
   case 6 :
@@ -383,13 +342,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     break;
   default:
     wrongBuzz();
-    lcd.clear();
-    lcd.setCursor(1, 0);
-    lcd.print("Undefined error!");
-    delay(2000);
-    lcd.clear();
-    lcd.setCursor(1, 0);
-    lcd.print("Mandevices Lab");
+    oneLineBack("Undefined Error",1000);
     break;
   }
 }
@@ -434,37 +387,6 @@ char *string2char(String command)
     char *p = const_cast<char *>(command.c_str());
     return p;
   }
-}
-
-void scrollSingleLine(String str1, String str2, int *flag)
-{
-  lcd.setCursor(4, 0);
-  lcd.print(str1);
-  lcd.setCursor(scrollCursor, 1);
-  lcd.print(str2.substring(stringStart, stringStop));
-  delay(250);
-  lcd.clear();
-  if (stringStart == 0 && scrollCursor > 0)
-  {
-    scrollCursor--;
-    stringStop++;
-  }
-  else if (stringStart == stringStop)
-  {
-    stringStart = stringStop = 0;
-    scrollCursor = 16;
-  }
-  else if (stringStop == str2.length() && scrollCursor == 0)
-  {
-    stringStart++;
-  }
-  else
-  {
-    stringStart++;
-    stringStop++;
-  }
-  if (stringStop == 0)
-    *flag = 1;
 }
 
 void correctBuzz()
