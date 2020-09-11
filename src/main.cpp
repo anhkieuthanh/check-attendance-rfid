@@ -14,23 +14,21 @@
 #define SIZE_BUFFER 18
 #define MAX_SIZE_BLOCK 16
 
-#define ssid "Dang Nam"
-#define password "01750175"
+#define ssid "realme 5i"
+#define password "nhoden3210"
 #define mqtt_server "mandevices.com"
 #define mqtt_topic_pub "attendance/card-register"
 #define mqtt_topic_sub "attendance/response"
-#define mqtt_topic_status "attendance/satus"
-
 #define mqtt_user "nhodennn"
 #define mqtt_pwd "Abccbdewn"
+#define buzz 27
+char data[50];
 const uint16_t mqtt_port = 1883;
-char data[30] = {};
 char resp[30];
 
 // just some reference flags for scroll lcd funtion
 int stringStart = 0, stringStop = 0;
 int scrollCursor = 16;
-
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -56,7 +54,8 @@ void reconnect();
 const char *dataCombine(const char *uid, const char *state);
 char *string2char(String command);
 void scrollSingleLine(String str1, String str2, int *flag);
-
+void correctBuzz();
+void wrongBuzz();
 void setup()
 {
   setup_wifi();
@@ -70,7 +69,20 @@ void setup()
     dateTime = NTPch.getNTPtime(7.0, 0);
   }
   RTC.adjust(DateTime(dateTime.year, dateTime.month, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second));
-  // DateTime now = RTC.now(); // Take time from RTC
+  DateTime now = RTC.now();
+  Serial.print(now.year(), DEC); // Năm
+  Serial.print('/');
+  Serial.print(now.month(), DEC); // Tháng
+  Serial.print('/');
+  Serial.print(now.day(), DEC); // Ngày
+  Serial.print(' ');
+  Serial.print(now.hour(), DEC); // Giờ
+  Serial.print(':');
+  Serial.print(now.minute(), DEC); // Phút
+  Serial.print(':');
+  Serial.print(now.second(), DEC); // Giây
+  Serial.println();
+  delay(1000); // Delay
 
   //use the lcd
   Wire.begin(5, 17);
@@ -78,6 +90,7 @@ void setup()
   lcd.backlight();
   lcd.setCursor(1, 0);
   lcd.print("Mandevices Lab");
+  pinMode(buzz, OUTPUT);
 
   Serial.begin(9600);
   SPI.begin();
@@ -85,7 +98,6 @@ void setup()
 
   Serial.println("Approach your reader card...");
   Serial.println();
-
 }
 
 void loop()
@@ -107,7 +119,9 @@ void loop()
   }
   readingData();
 
+  //instructs the PICC when in the ACTIVE state to go to a "STOP" state
   mfrc522.PICC_HaltA();
+  // "stop" the encryption of the PCD, it must be called after communication with authentication, otherwise new communications can not be initiated
   mfrc522.PCD_StopCrypto1();
 }
 
@@ -132,6 +146,7 @@ void readingData()
   Serial.println();
   //prints the technical details of the card/tag
   mfrc522.PICC_DumpDetailsToSerialUid(&(mfrc522.uid));
+
   //Convert UID into String
   String userid;
 
@@ -259,7 +274,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     Serial.print((char)payload[i]);
   }
   DynamicJsonDocument doc(200);
-  
+
   // Deserialize the JSON document
   DeserializationError error = deserializeJson(doc, resp);
   // Test if parsing succeeds.
@@ -274,6 +289,7 @@ void callback(char *topic, byte *payload, unsigned int length)
   const char *stdCode = doc["payload"]["stdCode"];
   const char *fullName = doc["payload"]["fullName"];
   const char *message = "Nguyen Dang Nho Den";
+  int flag = 0;
   switch (code)
   {
   case 0:
@@ -285,6 +301,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     lcd.print("Mandevices Lab");
     break;
   case 1:
+    wrongBuzz();
     lcd.clear();
     lcd.setCursor(0, 1);
     lcd.print("Not available!");
@@ -294,9 +311,40 @@ void callback(char *topic, byte *payload, unsigned int length)
     lcd.print("Mandevices Lab");
     break;
   case 2:
+    correctBuzz();
     lcd.clear();
     lcd.setCursor(0, 7);
-    lcd.print("OK");
+    lcd.print("Assign Successful");
+    delay(2000);
+    lcd.clear();
+    lcd.setCursor(1, 0);
+    lcd.print("Mandevices Lab");
+    break;
+  case 3:
+    wrongBuzz();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    while (!mfrc522.PICC_IsNewCardPresent())
+    {
+      scrollSingleLine("Message:", "You are not in today list", &flag);
+      if (flag == 1)
+        break;
+    }
+    delay(2000);
+    lcd.clear();
+    lcd.setCursor(1, 0);
+    lcd.print("Mandevices Lab");
+    break;
+  case 4:
+    wrongBuzz();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    while (!mfrc522.PICC_IsNewCardPresent())
+    {
+      scrollSingleLine("Message:", "Invalid Card!!", &flag);
+      if (flag == 1)
+        break;
+    }
     delay(2000);
     lcd.clear();
     lcd.setCursor(1, 0);
@@ -304,6 +352,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     break;
   case 5:
   {
+    correctBuzz();
     lcd.clear();
     lcd.setCursor(2, 0);
     lcd.print(fullName);
@@ -311,7 +360,6 @@ void callback(char *topic, byte *payload, unsigned int length)
     lcd.print(stdCode);
     delay(1000);
     lcd.clear();
-    int flag = 0;
     while (!mfrc522.PICC_IsNewCardPresent())
     {
       scrollSingleLine("Message: ", message, &flag);
@@ -322,13 +370,25 @@ void callback(char *topic, byte *payload, unsigned int length)
     lcd.print("Mandevices Lab");
     break;
   }
-  default:
+  case 6 :
+    wrongBuzz();
     lcd.clear();
-    lcd.setCursor(0, 1);
-    lcd.print("Undefined!");
+    lcd.setCursor(1, 0);
+    while (!mfrc522.PICC_IsNewCardPresent())
+    {
+      scrollSingleLine("Error", "Invalid package format!", &flag);
+      if (flag == 1)
+        break;
+    }
+    break;
+  default:
+    wrongBuzz();
+    lcd.clear();
+    lcd.setCursor(1, 0);
+    lcd.print("Undefined error!");
     delay(2000);
     lcd.clear();
-    lcd.setCursor(0, 1);
+    lcd.setCursor(1, 0);
     lcd.print("Mandevices Lab");
     break;
   }
@@ -344,28 +404,26 @@ void reconnect()
     {
       Serial.println("connected");
       client.subscribe(mqtt_topic_sub);
-      client.subscribe(mqtt_topic_status)
     }
   }
 }
 
 const char *dataCombine(const char *uid, const char *state)
 {
-  const char* data = '\0';
-  DynamicJsonDocument  doc(200);
+  data[0] = '\0';
+  DynamicJsonDocument doc(200);
   // Add values in the document
   doc["code"] = uid;
   doc["state"] = state;
 
   // Generate the minified JSON and send it to the Serial port.
   //
-  serializeJson(doc, Serial);
+  serializeJson(doc, data);
   // The above line prints:
   // {"code":"uid","state":state}
-  data = doc.as<const char*>();
-  Serial.print("------------");
+  Serial.println("test code: ");
   Serial.print(data);
-  Serial.print("---------------");
+  Serial.println("---------------");
   return data;
 }
 
@@ -407,4 +465,29 @@ void scrollSingleLine(String str1, String str2, int *flag)
   }
   if (stringStop == 0)
     *flag = 1;
+}
+
+void correctBuzz()
+{
+  digitalWrite(buzz, 1);
+  delay(500);
+  digitalWrite(buzz, 0);
+}
+void wrongBuzz()
+{
+  digitalWrite(buzz, 1);
+  delay(300);
+  digitalWrite(buzz, 0);
+  delay(60);
+  digitalWrite(buzz,1);
+  delay(100);
+  digitalWrite(buzz,0);
+  delay(60);
+  digitalWrite(buzz,1);
+  delay(100);
+  digitalWrite(buzz,0);
+  delay(60);
+  digitalWrite(buzz, 1);
+  delay(300);
+  digitalWrite(buzz,0);
 }
