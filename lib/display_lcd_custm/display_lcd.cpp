@@ -32,8 +32,12 @@ void scrollSingleLine(String fixedString, String scrolledString, int *flag)
     }
     if (stringStop == 0)
         *flag = 1;
+
+    stringStart = 0;
+    stringStop = 0;
 }
-void oneLineBack(String text, int timeDelay){
+void oneLineBack(String text, int timeDelay)
+{
     lcd.clear();
     lcd.setCursor(1, 0);
     lcd.print("Mandevices Lab");
@@ -44,10 +48,11 @@ void oneLineBack(String text, int timeDelay){
     lcd.setCursor(1, 0);
     lcd.print("Mandevices Lab");
 }
-void twoLineBack(String text1,String text2,int timeDelay){
-
+void twoLineBack(String text1, String text2, int timeDelay)
+{
 }
-void turnBackDefault(){
+void turnBackDefault()
+{
     lcd.clear();
     lcd.setCursor(1, 0);
     lcd.print("Mandevices Lab");
