@@ -3,13 +3,13 @@
 #include <SPI.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
-#include <string.h>
 #include <ArduinoJson.h>
 #include <NTPtimeESP.h>
 #include <RTClib.h>
 #include "display_lcd.h"
 #include "buzz.h"
 #include "rgb.h"
+#include "handle.h"
 
 #define SS_PIN 21
 #define RST_PIN 22
@@ -53,8 +53,6 @@ void writingData(byte buffer[MAX_SIZE_BLOCK]);
 void setup_wifi();
 void callback(char *topic, byte *payload, unsigned int length);
 void reconnect();
-const char *dataCombine(const char *uid, const char *state);
-char *string2char(String command);
 
 void setup()
 {
@@ -368,33 +366,5 @@ void reconnect()
       Serial.println("connected");
       client.subscribe(mqtt_topic_sub);
     }
-  }
-}
-
-const char *dataCombine(const char *uid, const char *state)
-{
-  data[0] = '\0';
-  DynamicJsonDocument doc(200);
-  // Add values in the document
-  doc["code"] = uid;
-  doc["state"] = state;
-
-  // Generate the minified JSON and send it to the Serial port.
-  //
-  serializeJson(doc, data);
-  // The above line prints:
-  // {"code":"uid","state":state}
-  Serial.println("test code: ");
-  Serial.print(data);
-  Serial.println("---------------");
-  return data;
-}
-
-char *string2char(String command)
-{
-  if (command.length() != 0)
-  {
-    char *p = const_cast<char *>(command.c_str());
-    return p;
   }
 }
