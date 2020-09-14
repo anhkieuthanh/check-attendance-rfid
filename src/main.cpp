@@ -9,14 +9,15 @@
 #include <RTClib.h>
 #include "display_lcd.h"
 #include "buzz.h"
+#include "rgb.h"
 
 #define SS_PIN 21
 #define RST_PIN 22
 #define SIZE_BUFFER 18
 #define MAX_SIZE_BLOCK 16
 
-#define ssid "realme 5i"
-#define password "nhoden3210"
+#define ssid "BMQQDT"
+#define password "bmqqdt123"
 #define mqtt_server "mandevices.com"
 #define mqtt_topic_pub "attendance/card-register"
 #define mqtt_topic_sub "attendance/response"
@@ -54,7 +55,6 @@ void callback(char *topic, byte *payload, unsigned int length);
 void reconnect();
 const char *dataCombine(const char *uid, const char *state);
 char *string2char(String command);
-//void scrollSingleLine(String str1, String str2, int *flag);
 
 void setup()
 {
@@ -62,33 +62,36 @@ void setup()
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
   Wire.begin(5, 17);
-  RTC.begin();
-  dateTime = NTPch.getNTPtime(7.0, 0);
-  while (!dateTime.valid)
-  {
-    dateTime = NTPch.getNTPtime(7.0, 0);
-  }
-  RTC.adjust(DateTime(dateTime.year, dateTime.month, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second));
-  DateTime now = RTC.now();
-  Serial.print(now.year(), DEC); // Năm
-  Serial.print('/');
-  Serial.print(now.month(), DEC); // Tháng
-  Serial.print('/');
-  Serial.print(now.day(), DEC); // Ngày
-  Serial.print(' ');
-  Serial.print(now.hour(), DEC); // Giờ
-  Serial.print(':');
-  Serial.print(now.minute(), DEC); // Phút
-  Serial.print(':');
-  Serial.print(now.second(), DEC); // Giây
-  Serial.println();
-  delay(1000); // Delay
+  // RTC.begin();
+  // dateTime = NTPch.getNTPtime(7.0, 0);
+  // while (!dateTime.valid)
+  // {
+  //   dateTime = NTPch.getNTPtime(7.0, 0);
+  // }
+  // RTC.adjust(DateTime(dateTime.year, dateTime.month, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second));
+  // DateTime now = RTC.now();
+  // Serial.print(now.year(), DEC); // Năm
+  // Serial.print('/');
+  // Serial.print(now.month(), DEC); // Tháng
+  // Serial.print('/');
+  // Serial.print(now.day(), DEC); // Ngày
+  // Serial.print(' ');
+  // Serial.print(now.hour(), DEC); // Giờ
+  // Serial.print(':');
+  // Serial.print(now.minute(), DEC); // Phút
+  // Serial.print(':');
+  // Serial.print(now.second(), DEC); // Giây
+  // Serial.println();
+  // delay(1000); // Delay
   lcd.init();
   lcd.backlight();
   lcd.setCursor(1, 0);
   lcd.print("Mandevices Lab");
-  pinMode(BUZZ_PIN,OUTPUT);
+  pinMode(BUZZ_PIN, OUTPUT);
 
+  pinMode(red_pin, OUTPUT);
+  pinMode(green_pin, OUTPUT);
+  pinMode(blue_pin, OUTPUT);
   Serial.begin(9600);
   SPI.begin();
   mfrc522.PCD_Init();
@@ -275,17 +278,21 @@ void callback(char *topic, byte *payload, unsigned int length)
   {
   case 0:
     oneLineBack("No connection!!", 1000);
+    red();
     break;
   case 1:
     wrongBuzz();
+    red();
     oneLineBack("Not available!", 1000);
     break;
   case 2:
     correctBuzz();
     oneLineBack("Assign Successfull", 1000);
+    green();
     break;
   case 3:
     wrongBuzz();
+    red();
     lcd.clear();
     lcd.setCursor(0, 0);
     while (!mfrc522.PICC_IsNewCardPresent())
@@ -299,6 +306,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     break;
   case 4:
     wrongBuzz();
+    red();
     lcd.clear();
     lcd.setCursor(0, 0);
     while (!mfrc522.PICC_IsNewCardPresent())
@@ -312,6 +320,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     break;
   case 5:
   {
+    green();
     correctBuzz();
     lcd.clear();
     lcd.setCursor(2, 0);
@@ -330,6 +339,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     break;
   }
   case 6:
+    red();
     wrongBuzz();
     lcd.clear();
     lcd.setCursor(1, 0);
@@ -388,5 +398,3 @@ char *string2char(String command)
     return p;
   }
 }
-
-
