@@ -10,7 +10,8 @@ char *string2char(String command)
 }
 const char *dataCombine(const char *uid, const char *state)
 {
-  data[0] = '\0';
+  char data[50];
+  //data[0] = '\0';
   DynamicJsonDocument doc(200);
   // Add values in the document
   doc["code"] = uid;

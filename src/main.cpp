@@ -10,21 +10,14 @@
 #include "buzz.h"
 #include "rgb.h"
 #include "handle.h"
+#include "config.h"
 
 #define SS_PIN 21
 #define RST_PIN 22
 #define SIZE_BUFFER 18
 #define MAX_SIZE_BLOCK 16
 
-#define ssid "BMQQDT"
-#define password "bmqqdt123"
-#define mqtt_server "mandevices.com"
-#define mqtt_topic_pub "attendance/card-register"
-#define mqtt_topic_sub "attendance/response"
-#define mqtt_user "nhodennn"
-#define mqtt_pwd "Abccbdewn"
-
-char data[50];
+//extern char data[50];
 const uint16_t mqtt_port = 1883;
 char resp[30];
 
