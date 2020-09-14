@@ -5,3 +5,4 @@
 #define mqtt_topic_sub "attendance/response"
 #define mqtt_user "nhodennn"
 #define mqtt_pwd "Abccbdewn"
+#define boardStatusTopic "attendance/status"

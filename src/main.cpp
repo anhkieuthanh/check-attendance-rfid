@@ -12,6 +12,8 @@
 #include "handle.h"
 #include "config.h"
 
+bool isConnectWiFi = false;
+
 #define SS_PIN 21
 #define RST_PIN 22
 #define SIZE_BUFFER 18
@@ -42,6 +44,7 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 extern LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMN, LCD_ROW);
 
 void readingData();
+void readingDataOffline();
 void writingData(byte buffer[MAX_SIZE_BLOCK]);
 void setup_wifi();
 void callback(char *topic, byte *payload, unsigned int length);
@@ -93,33 +96,55 @@ void setup()
 
 void loop()
 {
-  if (!client.connected())
+  if (isConnectWiFi)
   {
-    reconnect();
+    if (!client.connected())
+    {
+      reconnect();
+    }
+    client.loop();
+    //waiting the card approach
+    if (!mfrc522.PICC_IsNewCardPresent())
+    {
+      return;
+    }
+    // Select a card
+    if (!mfrc522.PICC_ReadCardSerial())
+    {
+      return;
+    }
+    readingData();
+    //instructs the PICC when in the ACTIVE state to go to a "STOP" state
+    mfrc522.PICC_HaltA();
+    // "stop" the encryption of the PCD, it must be called after communication with authentication, otherwise new communications can not be initiated
+    mfrc522.PCD_StopCrypto1();
   }
-  client.loop();
-  //waiting the card approach
-  if (!mfrc522.PICC_IsNewCardPresent())
-  {
-    return;
+  else   //TODO: Complete Offline Mode
+  { //Enter offline mode
+  Serial.println("Entered Offline Mode!!");
+    if (WiFi.status() == WL_CONNECTED)
+    {
+      isConnectWiFi = true;
+    }
+    if (!mfrc522.PICC_IsNewCardPresent())
+    {
+      return;
+    }
+    // Select a card
+    if (!mfrc522.PICC_ReadCardSerial())
+    {
+      return;
+    }
+    readingDataOffline();
+    mfrc522.PICC_HaltA();
+    // "stop" the encryption of the PCD, it must be called after communication with authentication, otherwise new communications can not be initiated
+    mfrc522.PCD_StopCrypto1();
   }
-  // Select a card
-  if (!mfrc522.PICC_ReadCardSerial())
-  {
-    return;
-  }
-  readingData();
-
-  //instructs the PICC when in the ACTIVE state to go to a "STOP" state
-  mfrc522.PICC_HaltA();
-  // "stop" the encryption of the PCD, it must be called after communication with authentication, otherwise new communications can not be initiated
-  mfrc522.PCD_StopCrypto1();
 }
 
 void setup_wifi()
 {
-  delay(10);
-  Serial.println();
+  int countTime = 0;
   Serial.print("Connecting to ");
   Serial.println(ssid);
   WiFi.begin(ssid, password);
@@ -127,9 +152,16 @@ void setup_wifi()
   {
     delay(500);
     Serial.print(".");
+    countTime++;
+    if (countTime == 60)
+      break;
   }
-  Serial.println("");
-  Serial.println("WiFi connected");
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    isConnectWiFi = true;
+    Serial.println("");
+    Serial.println("WiFi connected");
+  }
 }
 
 void readingData()
@@ -358,6 +390,7 @@ void reconnect()
     {
       Serial.println("connected");
       client.subscribe(mqtt_topic_sub);
+      client.subscribe(boardStatusTopic);
     }
   }
 }
