@@ -111,7 +111,7 @@ void loop()
   {    //Enter offline mode
     Serial.println("Entered Offline Mode!!");
     WiFi.begin(ssid, password);
-    delay(5000);
+    delay(1000);
     if (WiFi.status() == WL_CONNECTED)
     {
       isConnectWiFi = true;
