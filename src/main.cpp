@@ -11,7 +11,7 @@
 #include "rgb.h"
 #include "handle.h"
 #include "config.h"
-
+//#include <EEPROM.h>
 bool isConnectWiFi = false;
 
 #define SS_PIN 21
@@ -22,6 +22,7 @@ bool isConnectWiFi = false;
 //extern char data[50];
 const uint16_t mqtt_port = 1883;
 char resp[30];
+int flaseeAddress = 0;
 
 // just some reference flags for scroll lcd funtion
 // int stringStart = 0, stringStop = 0;
@@ -43,8 +44,8 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 
 extern LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMN, LCD_ROW);
 
-void readingData();
-void readingDataOffline();
+void readingData(bool isConnectWiFi);
+
 void writingData(byte buffer[MAX_SIZE_BLOCK]);
 void setup_wifi();
 void callback(char *topic, byte *payload, unsigned int length);
@@ -56,6 +57,8 @@ void setup()
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
   Wire.begin(5, 17);
+  // if (!EEPROM.begin())
+  //   Serial.println("Fail to init FLASH MEMORY");
   // RTC.begin();
   // dateTime = NTPch.getNTPtime(7.0, 0);
   // while (!dateTime.valid)
@@ -103,43 +106,31 @@ void loop()
       reconnect();
     }
     client.loop();
-    //waiting the card approach
-    if (!mfrc522.PICC_IsNewCardPresent())
-    {
-      return;
-    }
-    // Select a card
-    if (!mfrc522.PICC_ReadCardSerial())
-    {
-      return;
-    }
-    readingData();
-    //instructs the PICC when in the ACTIVE state to go to a "STOP" state
-    mfrc522.PICC_HaltA();
-    // "stop" the encryption of the PCD, it must be called after communication with authentication, otherwise new communications can not be initiated
-    mfrc522.PCD_StopCrypto1();
   }
-  else   //TODO: Complete Offline Mode
-  { //Enter offline mode
-  Serial.println("Entered Offline Mode!!");
+  else //TODO: Complete Offline Mode
+  {    //Enter offline mode
+    Serial.println("Entered Offline Mode!!");
+    WiFi.begin(ssid, password);
+    delay(5000);
     if (WiFi.status() == WL_CONNECTED)
     {
       isConnectWiFi = true;
     }
-    if (!mfrc522.PICC_IsNewCardPresent())
-    {
-      return;
-    }
-    // Select a card
-    if (!mfrc522.PICC_ReadCardSerial())
-    {
-      return;
-    }
-    readingDataOffline();
-    mfrc522.PICC_HaltA();
-    // "stop" the encryption of the PCD, it must be called after communication with authentication, otherwise new communications can not be initiated
-    mfrc522.PCD_StopCrypto1();
   }
+  if (!mfrc522.PICC_IsNewCardPresent())
+  {
+    return;
+  }
+  // Select a card
+  if (!mfrc522.PICC_ReadCardSerial())
+  {
+    return;
+  }
+  readingData(isConnectWiFi);
+  //instructs the PICC when in the ACTIVE state to go to a "STOP" state
+  mfrc522.PICC_HaltA();
+  // "stop" the encryption of the PCD, it must be called after communication with authentication, otherwise new communications can not be initiated
+  mfrc522.PCD_StopCrypto1();
 }
 
 void setup_wifi()
@@ -153,7 +144,7 @@ void setup_wifi()
     delay(500);
     Serial.print(".");
     countTime++;
-    if (countTime == 60)
+    if (countTime == 10)
       break;
   }
   if (WiFi.status() == WL_CONNECTED)
@@ -164,7 +155,7 @@ void setup_wifi()
   }
 }
 
-void readingData()
+void readingData(bool isConnectWiFi)
 {
   Serial.println();
   //prints the technical details of the card/tag
@@ -217,19 +208,28 @@ void readingData()
     i++;
     count++;
   }
-  if (count != 2)
+  if (isConnectWiFi)
   {
-    byte buffer2[MAX_SIZE_BLOCK] = "In";
-    client.publish(mqtt_topic_pub, dataCombine(string2char(userid), "In"));
-    writingData(buffer2);
-    oneLineBack("Welcome!!", 1000);
+
+    if (count != 2)
+    {
+      byte buffer2[MAX_SIZE_BLOCK] = "In";
+      client.publish(mqtt_topic_pub, dataCombine(string2char(userid), "In"));
+      writingData(buffer2);
+      oneLineBack("Welcome!!", 1000);
+    }
+    else
+    {
+      byte buffer2[MAX_SIZE_BLOCK] = "Out";
+      client.publish(mqtt_topic_pub, dataCombine(string2char(userid), "Out"));
+      writingData(buffer2);
+      oneLineBack("See you again!", 1000);
+    }
   }
   else
   {
-    byte buffer2[MAX_SIZE_BLOCK] = "Out";
-    client.publish(mqtt_topic_pub, dataCombine(string2char(userid), "Out"));
-    writingData(buffer2);
-    oneLineBack("See you again!", 1000);
+    if (flaseeAddress = FLASH_SIZE - 1)
+      flaseeAddress = 0;
   }
 }
 
@@ -382,7 +382,7 @@ void callback(char *topic, byte *payload, unsigned int length)
 
 void reconnect()
 {
-
+  int countTime = 0;
   while (!client.connected())
   {
     Serial.print("Attempting MQTT connection...");
@@ -391,6 +391,14 @@ void reconnect()
       Serial.println("connected");
       client.subscribe(mqtt_topic_sub);
       client.subscribe(boardStatusTopic);
+    }
+    delay(500);
+    Serial.print(".");
+    countTime++;
+    if (countTime == 10)
+    {
+      isConnectWiFi = false;
+      break;
     }
   }
 }
