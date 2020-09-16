@@ -8,7 +8,6 @@
 #include <RTClib.h>
 #include "display_lcd.h"
 #include "buzz.h"
-#include "rgb.h"
 #include "handle.h"
 #include "config.h"
 //#include <EEPROM.h>
@@ -57,6 +56,7 @@ void setup()
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
   Wire.begin(5, 17);
+
   // if (!EEPROM.begin())
   //   Serial.println("Fail to init FLASH MEMORY");
   // RTC.begin();
@@ -85,10 +85,8 @@ void setup()
   lcd.setCursor(1, 0);
   lcd.print("Mandevices Lab");
   pinMode(BUZZ_PIN, OUTPUT);
-
-  pinMode(red_pin, OUTPUT);
-  pinMode(green_pin, OUTPUT);
-  pinMode(blue_pin, OUTPUT);
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
   Serial.begin(9600);
   SPI.begin();
   mfrc522.PCD_Init();
@@ -99,6 +97,7 @@ void setup()
 
 void loop()
 {
+  
   if (isConnectWiFi)
   {
     if (!client.connected())
@@ -135,6 +134,7 @@ void loop()
 
 void setup_wifi()
 {
+  digitalWrite(RED_PIN, 1);
   int countTime = 0;
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -152,6 +152,10 @@ void setup_wifi()
     isConnectWiFi = true;
     Serial.println("");
     Serial.println("WiFi connected");
+    digitalWrite(RED_PIN,0);
+    digitalWrite(GREEN_PIN, 1);
+    delay(3000);
+    digitalWrite(GREEN_PIN, 0);
   }
 }
 
@@ -301,21 +305,21 @@ void callback(char *topic, byte *payload, unsigned int length)
   {
   case 0:
     oneLineBack("No connection!!", 1000);
-    red();
+ 
     break;
   case 1:
     wrongBuzz();
-    red();
+
     oneLineBack("Not available!", 1000);
     break;
   case 2:
     correctBuzz();
     oneLineBack("Assign Successfull", 1000);
-    green();
+
     break;
   case 3:
     wrongBuzz();
-    red();
+ 
     lcd.clear();
     lcd.setCursor(0, 0);
     while (!mfrc522.PICC_IsNewCardPresent())
@@ -329,7 +333,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     break;
   case 4:
     wrongBuzz();
-    red();
+
     lcd.clear();
     lcd.setCursor(0, 0);
     while (!mfrc522.PICC_IsNewCardPresent())
@@ -343,7 +347,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     break;
   case 5:
   {
-    green();
+  
     correctBuzz();
     lcd.clear();
     lcd.setCursor(2, 0);
@@ -362,7 +366,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     break;
   }
   case 6:
-    red();
+
     wrongBuzz();
     lcd.clear();
     lcd.setCursor(1, 0);
@@ -373,6 +377,8 @@ void callback(char *topic, byte *payload, unsigned int length)
         break;
     }
     break;
+  case 7:
+
   default:
     wrongBuzz();
     oneLineBack("Undefined Error", 1000);

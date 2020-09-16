@@ -7,3 +7,6 @@
 #define mqtt_pwd "Abccbdewn"
 #define boardStatusTopic "attendance/status"
 #define FLASH_SIZE 128
+
+#define RED_PIN 13
+#define GREEN_PIN 32
