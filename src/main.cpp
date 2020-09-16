@@ -19,7 +19,7 @@ bool isConnectWiFi = false;
 #define MAX_SIZE_BLOCK 16
 
 //extern char data[50];
-const uint16_t mqtt_port = 1883;
+
 char resp[30];
 int flaseeAddress = 0;
 
