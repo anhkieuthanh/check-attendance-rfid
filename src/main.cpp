@@ -256,83 +256,27 @@ void callback(char *topic, byte *payload, unsigned int length)
   const char *fullName = doc["payload"]["fullName"];
   const char *message = doc["message"];
   int flag = 0;
+  int commonCase;
+  if (code == 2 || code == 6 || code == 8 || code == 9 || code == 10)
+    commonCase = 1;
+  else if (code == 7)
+    commonCase = 0;
+  else
+    commonCase = 3;
   switch (code)
   {
-  case 0:
-    oneLineBack("No connection!!", 1000);
-
-    break;
   case 1:
-    wrongBuzz();
-
-    oneLineBack("Not available!", 1000);
-    break;
-  case 2:
     correctBuzz();
-    oneLineBack("Assign Successfull", 1000);
-
-    break;
-  case 3:
-    wrongBuzz();
-
-    lcd.clear();
-    lcd.setCursor(0, 0);
     while (!mfrc522.PICC_IsNewCardPresent())
     {
-      scrollSingleLine("Message:", "You are not in today list", &flag);
+      scrollSingleLine("Message:", message, &flag);
       if (flag == 1)
         break;
     }
     delay(2000);
     turnBackDefault();
     break;
-  case 4:
-    wrongBuzz();
-
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    while (!mfrc522.PICC_IsNewCardPresent())
-    {
-      scrollSingleLine("Message:", "Invalid Card!!", &flag);
-      if (flag == 1)
-        break;
-    }
-    delay(2000);
-    turnBackDefault();
-    break;
-  case 5:
-  {
-
-    correctBuzz();
-    lcd.clear();
-    lcd.setCursor(2, 0);
-    lcd.print(fullName);
-    lcd.setCursor(3, 1);
-    lcd.print(stdCode);
-    delay(1000);
-    lcd.clear();
-    while (!mfrc522.PICC_IsNewCardPresent())
-    {
-      scrollSingleLine("Message: ", message, &flag);
-      if (flag == 1)
-        break;
-    }
-    turnBackDefault();
-    break;
-  }
-  case 6:
-
-    wrongBuzz();
-    lcd.clear();
-    lcd.setCursor(1, 0);
-    while (!mfrc522.PICC_IsNewCardPresent())
-    {
-      scrollSingleLine("Error", "Invalid package format!", &flag);
-      if (flag == 1)
-        break;
-    }
-    break;
-  case 7:
+  case 0:
     lcd.clear();
     lcd.setCursor(0, 0);
     while (!mfrc522.PICC_IsNewCardPresent())
@@ -348,20 +292,6 @@ void callback(char *topic, byte *payload, unsigned int length)
     lcd.print("A: Yes");
     lcd.setCursor(1, 7);
     lcd.print("B: No");
-    switch (choice)
-    {
-    case 'A':
-    
-      break;
-    case 'B':
-      turnBackDefault();
-      break;
-    default:
-      lcd.clear();
-      lcd.setCursor(0,1);
-      lcd.print("Wrong option!");
-      break;
-    }
     break;
   default:
     wrongBuzz();
