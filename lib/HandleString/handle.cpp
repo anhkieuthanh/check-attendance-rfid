@@ -8,14 +8,14 @@ char *string2char(String command)
     return p;
   }
 }
-const char *dataCombine(const char *uid, const char *state)
+const char *dataCombine(const char *uid)
 {
   char data[50];
   //data[0] = '\0';
   DynamicJsonDocument doc(200);
   // Add values in the document
   doc["code"] = uid;
-  doc["state"] = state;
+  //doc["state"] = state;
 
   // Generate the minified JSON and send it to the Serial port.
   //

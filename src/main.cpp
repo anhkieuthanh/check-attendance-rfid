@@ -10,6 +10,8 @@
 #include "buzz.h"
 #include "handle.h"
 #include "config.h"
+#include <OnewireKeypad.h>
+
 //#include <EEPROM.h>
 bool isConnectWiFi = false;
 
@@ -17,7 +19,7 @@ bool isConnectWiFi = false;
 #define RST_PIN 22
 #define SIZE_BUFFER 18
 #define MAX_SIZE_BLOCK 16
-
+#define keypad 35
 //extern char data[50];
 
 char resp[30];
@@ -43,7 +45,7 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 
 extern LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMN, LCD_ROW);
 
-void readingData(bool isConnectWiFi);
+void readingData();
 
 void writingData(byte buffer[MAX_SIZE_BLOCK]);
 void setup_wifi();
@@ -56,66 +58,28 @@ void setup()
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
   Wire.begin(5, 17);
-
-  // if (!EEPROM.begin())
-  //   Serial.println("Fail to init FLASH MEMORY");
-  // RTC.begin();
-  // dateTime = NTPch.getNTPtime(7.0, 0);
-  // while (!dateTime.valid)
-  // {
-  //   dateTime = NTPch.getNTPtime(7.0, 0);
-  // }
-  // RTC.adjust(DateTime(dateTime.year, dateTime.month, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second));
-  // DateTime now = RTC.now();
-  // Serial.print(now.year(), DEC); // Năm
-  // Serial.print('/');
-  // Serial.print(now.month(), DEC); // Tháng
-  // Serial.print('/');
-  // Serial.print(now.day(), DEC); // Ngày
-  // Serial.print(' ');
-  // Serial.print(now.hour(), DEC); // Giờ
-  // Serial.print(':');
-  // Serial.print(now.minute(), DEC); // Phút
-  // Serial.print(':');
-  // Serial.print(now.second(), DEC); // Giây
-  // Serial.println();
-  // delay(1000); // Delay
   lcd.init();
   lcd.backlight();
   lcd.setCursor(1, 0);
   lcd.print("Mandevices Lab");
+  lcd.setCursor(0,1);
+  lcd.print("A:Me B:St C:Re ");
   pinMode(BUZZ_PIN, OUTPUT);
   pinMode(RED_PIN, OUTPUT);
   pinMode(GREEN_PIN, OUTPUT);
   Serial.begin(9600);
   SPI.begin();
   mfrc522.PCD_Init();
-
   Serial.println("Approach your reader card...");
-  Serial.println();
 }
 
 void loop()
 {
-  
-  if (isConnectWiFi)
-  {
     if (!client.connected())
     {
       reconnect();
     }
     client.loop();
-  }
-  else //TODO: Complete Offline Mode
-  {    //Enter offline mode
-    Serial.println("Entered Offline Mode!!");
-    WiFi.begin(ssid, password);
-    delay(1000);
-    if (WiFi.status() == WL_CONNECTED)
-    {
-      isConnectWiFi = true;
-    }
-  }
   if (!mfrc522.PICC_IsNewCardPresent())
   {
     return;
@@ -125,7 +89,7 @@ void loop()
   {
     return;
   }
-  readingData(isConnectWiFi);
+  readingData();
   //instructs the PICC when in the ACTIVE state to go to a "STOP" state
   mfrc522.PICC_HaltA();
   // "stop" the encryption of the PCD, it must be called after communication with authentication, otherwise new communications can not be initiated
@@ -159,7 +123,7 @@ void setup_wifi()
   }
 }
 
-void readingData(bool isConnectWiFi)
+void readingData()
 {
   Serial.println();
   //prints the technical details of the card/tag
@@ -212,29 +176,20 @@ void readingData(bool isConnectWiFi)
     i++;
     count++;
   }
-  if (isConnectWiFi)
-  {
-
     if (count != 2)
     {
       byte buffer2[MAX_SIZE_BLOCK] = "In";
-      client.publish(mqtt_topic_pub, dataCombine(string2char(userid), "In"));
+      client.publish(mqtt_topic_pub, dataCombine(string2char(userid)));
       writingData(buffer2);
       oneLineBack("Welcome!!", 1000);
     }
     else
     {
       byte buffer2[MAX_SIZE_BLOCK] = "Out";
-      client.publish(mqtt_topic_pub, dataCombine(string2char(userid), "Out"));
+      client.publish(mqtt_topic_pub, dataCombine(string2char(userid)));
       writingData(buffer2);
       oneLineBack("See you again!", 1000);
     }
-  }
-  else
-  {
-    if (flaseeAddress = FLASH_SIZE - 1)
-      flaseeAddress = 0;
-  }
 }
 
 void writingData(byte buffer[MAX_SIZE_BLOCK])
