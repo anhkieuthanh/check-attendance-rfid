@@ -2,7 +2,7 @@
 #define password "123456789"
 #define mqtt_server "mandevices.com"
 #define mqtt_port  1883
-#define mqtt_topic_pub "attendance/card-register"
+#define mqtt_topic_pub "attendance/card"
 #define mqtt_topic_sub "attendance/response"
 #define mqtt_user "nhodennn"
 #define mqtt_pwd "Abccbdewn"

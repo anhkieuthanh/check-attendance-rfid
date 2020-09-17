@@ -62,7 +62,7 @@ void setup()
   lcd.backlight();
   lcd.setCursor(1, 0);
   lcd.print("Mandevices Lab");
-  lcd.setCursor(0,1);
+  lcd.setCursor(0, 1);
   lcd.print("A:Me B:St C:Re ");
   pinMode(BUZZ_PIN, OUTPUT);
   pinMode(RED_PIN, OUTPUT);
@@ -75,11 +75,11 @@ void setup()
 
 void loop()
 {
-    if (!client.connected())
-    {
-      reconnect();
-    }
-    client.loop();
+  if (!client.connected())
+  {
+    reconnect();
+  }
+  client.loop();
   if (!mfrc522.PICC_IsNewCardPresent())
   {
     return;
@@ -116,7 +116,7 @@ void setup_wifi()
     isConnectWiFi = true;
     Serial.println("");
     Serial.println("WiFi connected");
-    digitalWrite(RED_PIN,0);
+    digitalWrite(RED_PIN, 0);
     digitalWrite(GREEN_PIN, 1);
     delay(3000);
     digitalWrite(GREEN_PIN, 0);
@@ -176,20 +176,20 @@ void readingData()
     i++;
     count++;
   }
-    if (count != 2)
-    {
-      byte buffer2[MAX_SIZE_BLOCK] = "In";
-      client.publish(mqtt_topic_pub, dataCombine(string2char(userid)));
-      writingData(buffer2);
-      oneLineBack("Welcome!!", 1000);
-    }
-    else
-    {
-      byte buffer2[MAX_SIZE_BLOCK] = "Out";
-      client.publish(mqtt_topic_pub, dataCombine(string2char(userid)));
-      writingData(buffer2);
-      oneLineBack("See you again!", 1000);
-    }
+  if (count != 2)
+  {
+    byte buffer2[MAX_SIZE_BLOCK] = "In";
+    client.publish(mqtt_topic_pub, dataCombine(string2char(userid)));
+    writingData(buffer2);
+    oneLineBack("Welcome!!", 1000);
+  }
+  else
+  {
+    byte buffer2[MAX_SIZE_BLOCK] = "Out";
+    client.publish(mqtt_topic_pub, dataCombine(string2char(userid)));
+    writingData(buffer2);
+    oneLineBack("See you again!", 1000);
+  }
 }
 
 void writingData(byte buffer[MAX_SIZE_BLOCK])
@@ -254,13 +254,13 @@ void callback(char *topic, byte *payload, unsigned int length)
   uint8_t code = doc["code"];
   const char *stdCode = doc["payload"]["stdCode"];
   const char *fullName = doc["payload"]["fullName"];
-  const char *message = "Nguyen Dang Nho Den";
+  const char *message = doc["message"];
   int flag = 0;
   switch (code)
   {
   case 0:
     oneLineBack("No connection!!", 1000);
- 
+
     break;
   case 1:
     wrongBuzz();
@@ -274,7 +274,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     break;
   case 3:
     wrongBuzz();
- 
+
     lcd.clear();
     lcd.setCursor(0, 0);
     while (!mfrc522.PICC_IsNewCardPresent())
@@ -302,7 +302,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     break;
   case 5:
   {
-  
+
     correctBuzz();
     lcd.clear();
     lcd.setCursor(2, 0);
@@ -333,7 +333,36 @@ void callback(char *topic, byte *payload, unsigned int length)
     }
     break;
   case 7:
-
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    while (!mfrc522.PICC_IsNewCardPresent())
+    {
+      scrollSingleLine("Message:", message, &flag);
+      if (flag == 1)
+        break;
+    }
+    lcd.clear();
+    lcd.setCursor(0, 1);
+    lcd.print("Dang ki the ?");
+    lcd.setCursor(1, 0);
+    lcd.print("A: Yes");
+    lcd.setCursor(1, 7);
+    lcd.print("B: No");
+    switch (choice)
+    {
+    case 'A':
+    
+      break;
+    case 'B':
+      turnBackDefault();
+      break;
+    default:
+      lcd.clear();
+      lcd.setCursor(0,1);
+      lcd.print("Wrong option!");
+      break;
+    }
+    break;
   default:
     wrongBuzz();
     oneLineBack("Undefined Error", 1000);
