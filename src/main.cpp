@@ -62,8 +62,6 @@ void setup()
   lcd.backlight();
   lcd.setCursor(1, 0);
   lcd.print("Mandevices Lab");
-  lcd.setCursor(0, 1);
-  lcd.print("A:Me B:St C:Re ");
   pinMode(BUZZ_PIN, OUTPUT);
   pinMode(RED_PIN, OUTPUT);
   pinMode(GREEN_PIN, OUTPUT);
