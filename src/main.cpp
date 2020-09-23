@@ -250,8 +250,6 @@ void callback(char *topic, byte *payload, unsigned int length)
   }
   // Fetch values.
   uint8_t code = doc["code"];
-  const char *stdCode = doc["payload"]["stdCode"];
-  const char *fullName = doc["payload"]["fullName"];
   const char *message = doc["message"];
   int flag = 0;
   int commonCase;
@@ -261,7 +259,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     commonCase = 0;
   else
     commonCase = 3;
-  switch (code)
+  switch (commonCase)
   {
   case 1:
     correctBuzz();

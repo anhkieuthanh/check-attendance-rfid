@@ -15,15 +15,10 @@ const char *dataCombine(const char *uid)
   DynamicJsonDocument doc(200);
   // Add values in the document
   doc["code"] = uid;
-  //doc["state"] = state;
-
   // Generate the minified JSON and send it to the Serial port.
-  //
   serializeJson(doc, data);
   // The above line prints:
-  // {"code":"uid","state":state}
   Serial.println("test code: ");
   Serial.print(data);
-  Serial.println("---------------");
   return data;
 }
