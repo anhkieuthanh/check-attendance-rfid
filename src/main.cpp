@@ -10,28 +10,23 @@
 #include "buzz.h"
 #include "handle.h"
 #include "config.h"
-#include <OnewireKeypad.h>
-
-//#include <EEPROM.h>
-bool isConnectWiFi = false;
-
+#include "customKeyPad.h"
 #define SS_PIN 21
 #define RST_PIN 22
 #define SIZE_BUFFER 18
 #define MAX_SIZE_BLOCK 16
-#define keypad 35
-//extern char data[50];
 
 char resp[30];
-int flaseeAddress = 0;
-
-// just some reference flags for scroll lcd funtion
-// int stringStart = 0, stringStop = 0;
-// int scrollCursor = 16;
-
+byte rowPins[KEYPADROW] = {0, 1, 2};
+byte colPins[KEYPADCOL] = {4, 5, 6, 7};
+char keys[KEYPADROW][KEYPADCOL] = {
+    {'1', '2', '3', 'A'},
+    {'4', '5', '6', 'B'},
+    {'7', '8', '9', 'C'},
+    // {'*','0','#','D'}
+};
 WiFiClient espClient;
 PubSubClient client(espClient);
-
 NTPtime NTPch("ch.pool.ntp.org");
 strDateTime dateTime;
 RTC_DS1307 RTC;
@@ -43,11 +38,12 @@ MFRC522::StatusCode status;
 // Defined pins to module RC522
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
-extern LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMN, LCD_ROW);
+LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMN, LCD_ROW);
+Keypad_I2C customKeypad(makeKeymap(keys), rowPins, colPins, KEYPADROW, KEYPADCOL, I2CADDR);
 
 void readingData();
-
-void writingData(byte buffer[MAX_SIZE_BLOCK]);
+void scrollSingleLine(String fixedString, String scrolledString, int *flag);
+void writingData();
 void setup_wifi();
 void callback(char *topic, byte *payload, unsigned int length);
 void reconnect();
@@ -58,6 +54,9 @@ void setup()
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
   Wire.begin(5, 17);
+
+  customKeypad.begin();
+  customKeypad.setHoldTime(2000);
   lcd.init();
   lcd.backlight();
   lcd.setCursor(1, 0);
@@ -111,7 +110,6 @@ void setup_wifi()
   }
   if (WiFi.status() == WL_CONNECTED)
   {
-    isConnectWiFi = true;
     Serial.println("");
     Serial.println("WiFi connected");
     digitalWrite(RED_PIN, 0);
@@ -161,36 +159,10 @@ void readingData()
     Serial.println(mfrc522.GetStatusCodeName(status));
     return;
   }
-  Serial.print("Last state: ");
-  //prints read data
-  for (uint8_t i = 0; i < MAX_SIZE_BLOCK; i++)
-  {
-    Serial.write(buffer[i]);
-  }
-  Serial.print(" ");
-  int count = 0, i = 0;
-  while (buffer[i] != '\0')
-  {
-    i++;
-    count++;
-  }
-  if (count != 2)
-  {
-    byte buffer2[MAX_SIZE_BLOCK] = "In";
-    client.publish(mqtt_topic_pub, dataCombine(string2char(userid)));
-    writingData(buffer2);
-    oneLineBack("Welcome!!", 1000);
-  }
-  else
-  {
-    byte buffer2[MAX_SIZE_BLOCK] = "Out";
-    client.publish(mqtt_topic_pub, dataCombine(string2char(userid)));
-    writingData(buffer2);
-    oneLineBack("See you again!", 1000);
-  }
+  client.publish(mqtt_topic_pub, dataCombine(string2char(userid)));
 }
 
-void writingData(byte buffer[MAX_SIZE_BLOCK])
+void writingData()
 {
   Serial.println();
   //prints technical details from of the card/tag
@@ -199,11 +171,11 @@ void writingData(byte buffer[MAX_SIZE_BLOCK])
   //prepare the key - all keys are set to FFFFFFFFFFFFh
   for (byte i = 0; i < 6; i++)
     key.keyByte[i] = 0xFF;
-  byte block;                  //the block to operate
-  block = 1;                   //the block to operate
-  String str = (char *)buffer; //transforms the buffer data in String
-  Serial.print("Current state: ");
-  Serial.println(str);
+  byte block; //the block to operate
+  block = 1;  //the block to operate
+  // String str = (char *)buffer; //transforms the buffer data in String
+  // Serial.print("Current state: ");
+  // Serial.println(str);
 
   //authenticates the block to operate
   //Authenticate is a command to hability a secure communication
@@ -218,7 +190,7 @@ void writingData(byte buffer[MAX_SIZE_BLOCK])
   }
 
   //Writes in the block
-  status = mfrc522.MIFARE_Write(block, buffer, MAX_SIZE_BLOCK);
+  //status = mfrc522.MIFARE_Write(block, buffer, MAX_SIZE_BLOCK);
   if (status != MFRC522::STATUS_OK)
   {
     Serial.println(F("MIFARE_Write() failed: "));
@@ -271,6 +243,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     }
     delay(2000);
     turnBackDefault();
+    oneLineBack(message, 2000);
     break;
   case 0:
     lcd.clear();
@@ -282,12 +255,66 @@ void callback(char *topic, byte *payload, unsigned int length)
         break;
     }
     lcd.clear();
-    lcd.setCursor(0, 1);
+    lcd.setCursor(0, 0);
     lcd.print("Dang ki the ?");
-    lcd.setCursor(1, 0);
+    lcd.setCursor(0, 1);
     lcd.print("A: Yes");
-    lcd.setCursor(1, 7);
+    lcd.setCursor(7, 1);
     lcd.print("B: No");
+    while (1)
+    {
+      if (customKeypad.waitForKey() == 'A')
+      {
+        oneLineFix("Nhap MSSV:");
+        stateInput = 1;
+        stateData = 1;
+        while (1)
+        {
+          readKeyPad(8);
+          if (stateInput == 0)
+          {
+            oneLineFix("Nhap MSSV");
+            stateInput = 1;
+          }
+          if (stateData == 2)
+          {
+            oneLineFix("Done");
+            delay(2000);
+            oneLineFix("Nhap sdt:");
+            stateInput = 1;
+            stateData = 1;
+            break;
+          }
+          if (stateInput == 3)
+            break;
+        }
+        while (1)
+        {
+          readKeyPad(9);
+          if (stateInput == 0)
+          {
+            oneLineFix("Nhap sdt");
+            stateInput = 1;
+          }
+          if (stateData == 2)
+          {
+            oneLineFix("Done!");
+            lcd.setCursor(0, 1);
+            lcd.print("Sent to server!");
+            delay(2000);
+            turnBackDefault();
+            break;
+          }
+          if(stateInput ==3) {turnBackDefault(); break;}
+        }
+      }
+      if (customKeypad.waitForKey() == 'B')
+      {
+        turnBackDefault();
+        break;
+      }
+    }
+
     break;
   default:
     wrongBuzz();
@@ -306,14 +333,12 @@ void reconnect()
     {
       Serial.println("connected");
       client.subscribe(mqtt_topic_sub);
-      client.subscribe(boardStatusTopic);
     }
     delay(500);
     Serial.print(".");
     countTime++;
     if (countTime == 10)
     {
-      isConnectWiFi = false;
       break;
     }
   }

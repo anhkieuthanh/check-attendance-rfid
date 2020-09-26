@@ -1,5 +1,5 @@
 #include "handle.h"
-
+char data[50];
 char *string2char(String command)
 {
   if (command.length() != 0)
@@ -10,11 +10,10 @@ char *string2char(String command)
 }
 const char *dataCombine(const char *uid)
 {
-  char data[50];
-  //data[0] = '\0';
+  data[0] = '/0';
   DynamicJsonDocument doc(200);
   // Add values in the document
-  doc["code"] = uid;
+  doc["id"] = uid;
   // Generate the minified JSON and send it to the Serial port.
   serializeJson(doc, data);
   // The above line prints:
