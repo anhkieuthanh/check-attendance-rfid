@@ -2,9 +2,11 @@
 int count = 0;
 uint8_t stateData;
 uint8_t stateInput;
-void readKeyPad(uint8_t length)
+char bufferData[30];
+void readKeyPad(int length, char *result)
 {
-    char key = customKeypad.getKey();
+
+    char key = customKeypad.waitForKey();
     if (key != NO_KEY)
     {
         switch (key)
@@ -13,13 +15,17 @@ void readKeyPad(uint8_t length)
             if (count != length)
             {
                 oneLineFix("Wrong format");
-                delay(2000);
+                memset(bufferData,0,30);
+                delay(1500);
                 stateInput = 0;
                 count = 0;
                 break;
             }
             if (count == length)
             {
+                strcpy(result,bufferData);
+                Serial.println("In Function");
+                Serial.println(result);
                 oneLineFix("Confirm??");
                 lcd.setCursor(0, 1);
                 lcd.print("A: Yes");
@@ -37,6 +43,7 @@ void readKeyPad(uint8_t length)
                     count = 0;
                     break;
                 }
+                memset(bufferData,0,30);
             }
             break;
         case 'B':
@@ -54,6 +61,7 @@ void readKeyPad(uint8_t length)
         default:
             lcd.setCursor(count, 1);
             lcd.print(key);
+            bufferData[count] = key;
             count++;
             break;
         }

@@ -6,6 +6,7 @@
 // #define mqtt_port  1883
 #define mqtt_topic_pub "server: card"
 #define mqtt_topic_sub "server: response"
+#define mqtt_topic_reg "server: card-register"
 #define mqtt_user "ryuatszf"
 #define mqtt_pwd "Y8vXAN_3iQVO"
 #define FLASH_SIZE 128

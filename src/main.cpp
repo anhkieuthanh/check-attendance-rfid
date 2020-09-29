@@ -11,26 +11,27 @@
 #include "handle.h"
 #include "config.h"
 #include "customKeyPad.h"
+
 #define SS_PIN 21
 #define RST_PIN 22
 #define SIZE_BUFFER 18
 #define MAX_SIZE_BLOCK 16
 
 char resp[30];
-byte rowPins[KEYPADROW] = {0, 1, 2};
+byte rowPins[KEYPADROW] = {0, 1, 2, 3};
 byte colPins[KEYPADCOL] = {4, 5, 6, 7};
 char keys[KEYPADROW][KEYPADCOL] = {
     {'1', '2', '3', 'A'},
     {'4', '5', '6', 'B'},
     {'7', '8', '9', 'C'},
-    // {'*','0','#','D'}
-};
+    {'*', '0', '#', 'D'}};
 WiFiClient espClient;
 PubSubClient client(espClient);
 NTPtime NTPch("ch.pool.ntp.org");
 strDateTime dateTime;
 RTC_DS1307 RTC;
 
+String userIDBuffer;
 //used in authentication
 MFRC522::MIFARE_Key key;
 //authentication return status code
@@ -52,9 +53,9 @@ void setup()
 {
   setup_wifi();
   client.setServer(mqtt_server, mqtt_port);
+  SPI.begin();
   client.setCallback(callback);
   Wire.begin(5, 17);
-
   customKeypad.begin();
   customKeypad.setHoldTime(2000);
   lcd.init();
@@ -65,7 +66,6 @@ void setup()
   pinMode(RED_PIN, OUTPUT);
   pinMode(GREEN_PIN, OUTPUT);
   Serial.begin(9600);
-  SPI.begin();
   mfrc522.PCD_Init();
   Serial.println("Approach your reader card...");
 }
@@ -92,7 +92,26 @@ void loop()
   // "stop" the encryption of the PCD, it must be called after communication with authentication, otherwise new communications can not be initiated
   mfrc522.PCD_StopCrypto1();
 }
-
+void reconnect()
+{
+  int countTime = 0;
+  while (!client.connected())
+  {
+    Serial.print("Attempting MQTT connection...");
+    if (client.connect("ESP32", mqtt_user, mqtt_pwd))
+    {
+      Serial.println("connected");
+      client.subscribe(mqtt_topic_sub);
+    }
+    delay(500);
+    Serial.print(".");
+    countTime++;
+    if (countTime == 10)
+    {
+      break;
+    }
+  }
+}
 void setup_wifi()
 {
   digitalWrite(RED_PIN, 1);
@@ -127,13 +146,14 @@ void readingData()
 
   //Convert UID into String
   String userid;
-
+  userIDBuffer = "";
   for (byte i = 0; i < mfrc522.uid.size; i++)
   {
     userid += String(mfrc522.uid.uidByte[i], HEX);
+    userIDBuffer += String(mfrc522.uid.uidByte[i], HEX);
   }
-
   //prepare the key - all keys are set to FFFFFFFFFFFFh
+
   for (byte i = 0; i < 6; i++)
     key.keyByte[i] = 0xFF;
 
@@ -210,7 +230,6 @@ void callback(char *topic, byte *payload, unsigned int length)
     Serial.print((char)payload[i]);
   }
   DynamicJsonDocument doc(200);
-
   // Deserialize the JSON document
   DeserializationError error = deserializeJson(doc, resp);
   // Test if parsing succeeds.
@@ -223,6 +242,15 @@ void callback(char *topic, byte *payload, unsigned int length)
   // Fetch values.
   uint8_t code = doc["code"];
   const char *message = doc["message"];
+  char *stdCode;
+  char *userPhone;
+  while (stdCode == NULL || userPhone == NULL)
+  {
+    stdCode = (char *)malloc(9);
+    userPhone = (char *)malloc(10);
+  }
+  const char *data1;
+  const char *data2;
   int flag = 0;
   int commonCase;
   if (code == 2 || code == 6 || code == 8 || code == 9 || code == 10)
@@ -246,14 +274,13 @@ void callback(char *topic, byte *payload, unsigned int length)
     oneLineBack(message, 2000);
     break;
   case 0:
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    while (!mfrc522.PICC_IsNewCardPresent())
-    {
-      scrollSingleLine("Message:", message, &flag);
-      if (flag == 1)
-        break;
-    }
+    correctBuzz();
+    // while (!mfrc522.PICC_IsNewCardPresent())
+    // {
+    //   scrollSingleLine("Message:", message, &flag);
+    //   if (flag == 1)
+    //     break;
+    // }
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Dang ki the ?");
@@ -263,14 +290,16 @@ void callback(char *topic, byte *payload, unsigned int length)
     lcd.print("B: No");
     while (1)
     {
-      if (customKeypad.waitForKey() == 'A')
+      char choice = customKeypad.waitForKey();
+      if (choice == 'A')
       {
         oneLineFix("Nhap MSSV:");
         stateInput = 1;
         stateData = 1;
+        count = 0;
         while (1)
         {
-          readKeyPad(8);
+          readKeyPad(8, stdCode);
           if (stateInput == 0)
           {
             oneLineFix("Nhap MSSV");
@@ -279,18 +308,18 @@ void callback(char *topic, byte *payload, unsigned int length)
           if (stateData == 2)
           {
             oneLineFix("Done");
-            delay(2000);
+            delay(1000);
+
             oneLineFix("Nhap sdt:");
-            stateInput = 1;
             stateData = 1;
             break;
           }
-          if (stateInput == 3)
-            break;
         }
+        data1 = stdCode;
+        count = 0;
         while (1)
         {
-          readKeyPad(9);
+          readKeyPad(9, userPhone);
           if (stateInput == 0)
           {
             oneLineFix("Nhap sdt");
@@ -299,47 +328,32 @@ void callback(char *topic, byte *payload, unsigned int length)
           if (stateData == 2)
           {
             oneLineFix("Done!");
-            lcd.setCursor(0, 1);
-            lcd.print("Sent to server!");
+            oneLineBack("Sent to server", 1000);
+            stateData = 1;
             delay(2000);
-            turnBackDefault();
             break;
           }
-          if(stateInput ==3) {turnBackDefault(); break;}
         }
+        data2 = userPhone;
+        break;
       }
-      if (customKeypad.waitForKey() == 'B')
+      if (choice == 'B')
       {
         turnBackDefault();
         break;
       }
     }
+    client.publish(mqtt_topic_reg, dataCombineReg(userIDBuffer.c_str(), data1, data2));
+    free(userPhone);
+    free(stdCode);
+    Serial.println();
+    Serial.println(data1);
+    Serial.println(data2);
 
     break;
   default:
     wrongBuzz();
     oneLineBack("Undefined Error", 1000);
     break;
-  }
-}
-
-void reconnect()
-{
-  int countTime = 0;
-  while (!client.connected())
-  {
-    Serial.print("Attempting MQTT connection...");
-    if (client.connect("ESP32", mqtt_user, mqtt_pwd))
-    {
-      Serial.println("connected");
-      client.subscribe(mqtt_topic_sub);
-    }
-    delay(500);
-    Serial.print(".");
-    countTime++;
-    if (countTime == 10)
-    {
-      break;
-    }
   }
 }

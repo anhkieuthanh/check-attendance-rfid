@@ -1,5 +1,6 @@
 #include "handle.h"
 char data[50];
+char data2[100];
 char *string2char(String command)
 {
   if (command.length() != 0)
@@ -10,7 +11,7 @@ char *string2char(String command)
 }
 const char *dataCombine(const char *uid)
 {
-  data[0] = '/0';
+  memset(data,0,50);
   DynamicJsonDocument doc(200);
   // Add values in the document
   doc["id"] = uid;
@@ -20,4 +21,13 @@ const char *dataCombine(const char *uid)
   Serial.println("test code: ");
   Serial.print(data);
   return data;
+}
+const char * dataCombineReg(const char* id,const char* stdCode,const char* phone){
+  memset(data2,0,100);
+  DynamicJsonDocument doc(200);
+  doc["id"] = id;
+  doc["stdCode"] = stdCode;
+  doc["phone"] = phone;
+  serializeJson(doc,data2);
+  return data2;
 }
