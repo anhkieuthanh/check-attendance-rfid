@@ -94,7 +94,6 @@ void loop()
 }
 void reconnect()
 {
-  int countTime = 0;
   while (!client.connected())
   {
     Serial.print("Attempting MQTT connection...");
@@ -105,11 +104,6 @@ void reconnect()
     }
     delay(500);
     Serial.print(".");
-    countTime++;
-    if (countTime == 10)
-    {
-      break;
-    }
   }
 }
 void setup_wifi()
@@ -349,7 +343,6 @@ void callback(char *topic, byte *payload, unsigned int length)
     Serial.println();
     Serial.println(data1);
     Serial.println(data2);
-
     break;
   default:
     wrongBuzz();
