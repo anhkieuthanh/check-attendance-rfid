@@ -24,9 +24,9 @@ const char *dataCombine(const char *uid)
 }
 const char *dataCombineReg(const char *id, const char *stdCode, const char *phone)
 {
-  static char data2[70];
-  memset(data2, 0, 70);
-  DynamicJsonDocument doc(70);
+  static char data2[200];
+  memset(data2, 0, 200);
+  DynamicJsonDocument doc(200);
   doc["id"] = id;
   doc["stdCode"] = stdCode;
   doc["phone"] = phone;

@@ -337,6 +337,7 @@ void callback(char *topic, byte *payload, unsigned int length)
         break;
       }
     }
+    Serial.println("DOne sent.....");
     client.publish(mqtt_topic_reg, dataCombineReg(userIDBuffer.c_str(), data1, data2));
     free(userPhone);
     free(stdCode);
