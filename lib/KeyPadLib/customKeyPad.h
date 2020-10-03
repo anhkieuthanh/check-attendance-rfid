@@ -11,4 +11,4 @@ extern Keypad_I2C customKeypad;
 extern LiquidCrystal_I2C lcd;
 
 // <length> to check corect length of inputdata
-void readKeyPad(int length,char* result);
+void readKeyPad(int length,String &result);

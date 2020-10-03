@@ -16,7 +16,8 @@
 #define RST_PIN 22
 #define SIZE_BUFFER 18
 #define MAX_SIZE_BLOCK 16
-
+String stdCode = "";
+String userPhone = "";
 char resp[30];
 byte rowPins[KEYPADROW] = {0, 1, 2, 3};
 byte colPins[KEYPADCOL] = {4, 5, 6, 7};
@@ -215,6 +216,7 @@ void writingData()
 
 void callback(char *topic, byte *payload, unsigned int length)
 {
+  const char *publishData;
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
@@ -236,15 +238,7 @@ void callback(char *topic, byte *payload, unsigned int length)
   // Fetch values.
   uint8_t code = doc["code"];
   const char *message = doc["message"];
-  char *stdCode;
-  char *userPhone;
-  while (stdCode == NULL || userPhone == NULL)
-  {
-    stdCode = (char *)malloc(9);
-    userPhone = (char *)malloc(10);
-  }
-  const char *data1;
-  const char *data2;
+
   int flag = 0;
   int commonCase;
   if (code == 2 || code == 6 || code == 8 || code == 9 || code == 10)
@@ -309,7 +303,6 @@ void callback(char *topic, byte *payload, unsigned int length)
             break;
           }
         }
-        data1 = stdCode;
         count = 0;
         while (1)
         {
@@ -328,7 +321,6 @@ void callback(char *topic, byte *payload, unsigned int length)
             break;
           }
         }
-        data2 = userPhone;
         break;
       }
       if (choice == 'B')
@@ -336,14 +328,13 @@ void callback(char *topic, byte *payload, unsigned int length)
         turnBackDefault();
         break;
       }
-    }
-    Serial.println("DOne sent.....");
-    client.publish(mqtt_topic_reg, dataCombineReg(userIDBuffer.c_str(), data1, data2));
-    free(userPhone);
-    free(stdCode);
-    Serial.println();
-    Serial.println(data1);
-    Serial.println(data2);
+    };
+    client.publish(mqtt_topic_reg, dataCombineReg(string2char(userIDBuffer), string2char(stdCode), string2char(userPhone)));
+    Serial.println(userIDBuffer.c_str());
+    Serial.println(stdCode.c_str());
+    Serial.println(userPhone.c_str());
+    stdCode = "";
+    userPhone = "";
     break;
   default:
     wrongBuzz();
