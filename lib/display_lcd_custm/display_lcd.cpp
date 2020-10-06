@@ -1,7 +1,6 @@
 #include "display_lcd.h"
 int stringStart = 0, stringStop = 0;
 int scrollCursor = 16;
-
 void oneLineBack(String text, int timeDelay)
 {
   lcd.clear();
@@ -30,6 +29,7 @@ void turnBackDefault()
 }
 void scrollSingleLine(String fixedString, String scrolledString, int *flag)
 {
+
   lcd.setCursor(4, 0);
   lcd.print(fixedString);
   lcd.setCursor(scrollCursor, 1);
@@ -39,6 +39,7 @@ void scrollSingleLine(String fixedString, String scrolledString, int *flag)
   if (stringStart == 0 && scrollCursor > 0)
   {
     scrollCursor--;
+    ì(stringStop != scrolledString.length())
     stringStop++;
   }
   else if (stringStart == stringStop)
@@ -58,12 +59,15 @@ void scrollSingleLine(String fixedString, String scrolledString, int *flag)
   if (stringStop == 0)
     *flag = 1;
 
-  stringStart = 0;
-  stringStop = 0;
+  // stringStart = 0;
+  // stringStop = 0;
 }
-void oneLineFix(String text){
+void oneLineFix(String text)
+{
   lcd.clear();
-  lcd.setCursor(0,0);
-  if(text.length()>16)  lcd.scrollDisplayRight();
-  else lcd.print(text);
+  lcd.setCursor(0, 0);
+  if (text.length() > 16)
+    lcd.scrollDisplayRight();
+  else
+    lcd.print(text);
 }

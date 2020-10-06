@@ -16,6 +16,8 @@
 #define RST_PIN 22
 #define SIZE_BUFFER 18
 #define MAX_SIZE_BLOCK 16
+
+
 String stdCode = "";
 String userPhone = "";
 char resp[30];
@@ -216,7 +218,7 @@ void writingData()
 
 void callback(char *topic, byte *payload, unsigned int length)
 {
-  const char *publishData;
+
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
@@ -251,7 +253,7 @@ void callback(char *topic, byte *payload, unsigned int length)
   {
   case 1:
     correctBuzz();
-    while (!mfrc522.PICC_IsNewCardPresent())
+    while (1)
     {
       scrollSingleLine("Message:", message, &flag);
       if (flag == 1)
@@ -263,12 +265,12 @@ void callback(char *topic, byte *payload, unsigned int length)
     break;
   case 0:
     correctBuzz();
-    // while (!mfrc522.PICC_IsNewCardPresent())
-    // {
-    //   scrollSingleLine("Message:", message, &flag);
-    //   if (flag == 1)
-    //     break;
-    // }
+    while (1)
+    {
+      scrollSingleLine("Message:", message, &flag);
+      if (flag == 1)
+        break;
+    }
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Dang ki the ?");
