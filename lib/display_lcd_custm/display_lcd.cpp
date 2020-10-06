@@ -34,11 +34,12 @@ void scrollSingleLine(String fixedString, String scrolledString, int *flag)
   lcd.print(fixedString);
   lcd.setCursor(scrollCursor, 1);
   lcd.print(scrolledString.substring(stringStart, stringStop));
-  delay(250);
+  delay(500);
   lcd.clear();
-  if (stringStart == 0 && scrollCursor > 0)
+  if ((stringStart == 0) && (scrollCursor > 0))
   {
     scrollCursor--;
+    if (stringStop != scrolledString.length())
     stringStop++;
   }
   else if (stringStart == stringStop)
@@ -46,11 +47,11 @@ void scrollSingleLine(String fixedString, String scrolledString, int *flag)
     stringStart = stringStop = 0;
     scrollCursor = 16;
   }
-  else if (stringStop == scrolledString.length() && scrollCursor == 0)
+  else if ((stringStop == scrolledString.length()) && (scrollCursor == 0))
   {
     stringStart++;
   }
-  else
+  else if ((stringStop != scrolledString.length()) && (scrollCursor == 0))
   {
     stringStart++;
     stringStop++;
@@ -58,8 +59,8 @@ void scrollSingleLine(String fixedString, String scrolledString, int *flag)
   if (stringStop == 0)
     *flag = 1;
 
-  stringStart = 0;
-  stringStop = 0;
+  // stringStart = 0;
+  // stringStop = 0;
 }
 void oneLineFix(String text){
   lcd.clear();

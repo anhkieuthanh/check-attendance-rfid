@@ -268,6 +268,10 @@ void callback(char *topic, byte *payload, unsigned int length)
       scrollSingleLine("Message:", message, &flag);
       if (flag == 1)
         break;
+        // lcd.setCursor(4,0);
+        // lcd.print("Message:");
+        // lcd.print();
+        //lcd.send(0x18);
     }
     delay(2000);
     turnBackDefault();
@@ -354,6 +358,7 @@ void callback(char *topic, byte *payload, unsigned int length)
   default:
     wrongBuzz();
     oneLineBack("Undefined Error", 1000);
-    break;
+  break;
   }
+
 }
