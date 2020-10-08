@@ -1,5 +1,5 @@
 #define ssid "hello"
-#define password "123456789"
+#define passphrase "123456789"
 #define mqtt_server "soldier.cloudmqtt.com"
 // #define mqtt_server "mandevices.com"
 #define mqtt_port  16306
