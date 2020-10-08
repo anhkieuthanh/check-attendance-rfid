@@ -17,7 +17,6 @@
 #define SIZE_BUFFER 18
 #define MAX_SIZE_BLOCK 16
 
-
 String stdCode = "";
 String userPhone = "";
 char resp[30];
@@ -111,7 +110,6 @@ void reconnect()
 }
 void setup_wifi()
 {
-  digitalWrite(RED_PIN, 1);
   int countTime = 0;
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -128,10 +126,6 @@ void setup_wifi()
   {
     Serial.println("");
     Serial.println("WiFi connected");
-    digitalWrite(RED_PIN, 0);
-    digitalWrite(GREEN_PIN, 1);
-    delay(3000);
-    digitalWrite(GREEN_PIN, 0);
   }
 }
 
@@ -259,9 +253,7 @@ void callback(char *topic, byte *payload, unsigned int length)
       if (flag == 1)
         break;
     }
-    delay(2000);
     turnBackDefault();
-    oneLineBack(message, 2000);
     break;
   case 0:
     correctBuzz();

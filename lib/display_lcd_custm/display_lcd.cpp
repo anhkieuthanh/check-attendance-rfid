@@ -39,7 +39,7 @@ void scrollSingleLine(String fixedString, String scrolledString, int *flag)
   if (stringStart == 0 && scrollCursor > 0)
   {
     scrollCursor--;
-    ì(stringStop != scrolledString.length())
+    if(stringStop != scrolledString.length())
     stringStop++;
   }
   else if (stringStart == stringStop)
@@ -58,9 +58,6 @@ void scrollSingleLine(String fixedString, String scrolledString, int *flag)
   }
   if (stringStop == 0)
     *flag = 1;
-
-  // stringStart = 0;
-  // stringStop = 0;
 }
 void oneLineFix(String text)
 {
