@@ -22,6 +22,7 @@
 
 //int i = 0;
 int statusCode;
+boolean check;
 String st;
 String content;
 char resp[30];
@@ -86,9 +87,19 @@ void setup()
 
 void loop()
 {
-  if (!client.connected())
+  if (WiFi.status() != WL_CONNECTED)
+  check=client.connected();
+  if (!check)
   {
+    check==0;
+     for (int i = 0; i < 512; i++) 
+    {
+      EEPROM.write(i, 0);
+      delay(5);
+    }
     reconnect();
+    // if (testWifi())
+    //   client.connected();
   }
   client.loop();
   if (!mfrc522.PICC_IsNewCardPresent())
@@ -109,23 +120,68 @@ void loop()
 void reconnect()
 {
   int countTime = 0;
-  while (!client.connected())
-  {
-    Serial.print("Attempting MQTT connection...");
-    if (client.connect("ESP32", mqtt_user, mqtt_pwd))
+    while (!client.connected())
     {
-      Serial.println("connected");
-      client.subscribe(mqtt_topic_sub);
-    }
-    delay(500);
-    Serial.print(".");
-    countTime++;
-    if (countTime == 10)
-    {
-      break;
+      Serial.print("Attempting MQTT connection...");
+      EEPROM.begin(512); //Initialasing EEPROM
+      delay(10);
+      pinMode(LED_BUILTIN, OUTPUT);
+      Serial.println();
+      Serial.println();
+      Serial.println("Startup");
+      //---------------------------------------- Read eeprom for ssid and pass
+      Serial.println("Reading EEPROM ssid");
+      String esid;
+      for (int i = 0; i < 32; ++i)
+      {
+        esid += char(EEPROM.read(i));
+      }
+      Serial.println();
+      Serial.print("SSID: ");
+      Serial.println(esid);
+      Serial.println("Reading EEPROM pass");
+      String epass = "";
+      for (int i = 32; i < 96; ++i)
+      {
+        epass += char(EEPROM.read(i));
+      }
+      Serial.print("PASS: ");
+      Serial.println(epass);
+      WiFi.begin(esid.c_str(), epass.c_str());
+      if (testWifi())
+      {
+        Serial.println("Succesfully Connected!!!");
+        check=true;
+        return;
+      }
+      else
+      {
+        Serial.println("Turning the HotSpot On");
+        launchWeb();
+        setupAP(); 
+      }
+      Serial.println();
+      Serial.println("Waiting.");
+      while ((WiFi.status() != WL_CONNECTED))
+      {
+        Serial.print(".");
+        delay(100);
+        server.handleClient();
+      }
+        if (client.connect("ESP32", mqtt_user, mqtt_pwd))
+        {
+          Serial.println("connected");
+          client.subscribe(mqtt_topic_sub);
+        }
+        delay(500);
+        Serial.print(".");
+        countTime++;
+        if (countTime == 10)
+        {
+          break;
+        }
     }
   }
-}
 void setup_wifi()
 {
   // digitalWrite(RED_PIN, 1);
@@ -150,53 +206,9 @@ void setup_wifi()
   //   delay(3000);
   //   digitalWrite(GREEN_PIN, 0);
   // }
-  Serial.println("Disconnecting previously connected WiFi");
-  WiFi.disconnect();
-  EEPROM.begin(512); //Initialasing EEPROM
-  delay(10);
-  pinMode(LED_BUILTIN, OUTPUT);
-  Serial.println();
-  Serial.println();
-  Serial.println("Startup");
-  //---------------------------------------- Read eeprom for ssid and pass
-  Serial.println("Reading EEPROM ssid");
-  String esid;
-  for (int i = 0; i < 32; ++i)
-  {
-    esid += char(EEPROM.read(i));
-  }
-  Serial.println();
-  Serial.print("SSID: ");
-  Serial.println(esid);
-  Serial.println("Reading EEPROM pass");
-  String epass = "";
-  for (int i = 32; i < 96; ++i)
-  {
-    epass += char(EEPROM.read(i));
-  }
-  Serial.print("PASS: ");
-  Serial.println(epass);
-  WiFi.begin(esid.c_str(), epass.c_str());
-  if (testWifi())
-  {
-    Serial.println("Succesfully Connected!!!");
-    return;
-  }
-  else
-  {
-    Serial.println("Turning the HotSpot On");
-    launchWeb();
-    setupAP(); 
-  }
-  Serial.println();
-  Serial.println("Waiting.");
-  while ((WiFi.status() != WL_CONNECTED))
-  {
-    Serial.print(".");
-    delay(100);
-    server.handleClient();
-  }
-}
+//   
+//   }
+ }
 void readingData()
 {
   Serial.println();
@@ -272,6 +284,7 @@ void writingData()
   //status = mfrc522.MIFARE_Write(block, buffer, MAX_SIZE_BLOCK);
   if (status != MFRC522::STATUS_OK)
   {
+  
     Serial.println(F("MIFARE_Write() failed: "));
     Serial.println(mfrc522.GetStatusCodeName(status));
     return;

@@ -686,7 +686,7 @@ boolean PubSubClient::connected() {
     if (_client == NULL ) {
         rc = false;
     } else {
-        rc = (int)_client->connected();
+        rc = _client->connected();
         if (!rc) {
             if (this->_state == MQTT_CONNECTED) {
                 this->_state = MQTT_CONNECTION_LOST;
