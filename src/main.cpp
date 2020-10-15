@@ -379,7 +379,6 @@ void callback(char *topic, byte *payload, unsigned int length)
           {
             oneLineFix("Done!");
             oneLineBack("Sent to server", 1000);
-
             stateData = 1;
             delay(2000);
             break;
@@ -393,11 +392,10 @@ void callback(char *topic, byte *payload, unsigned int length)
         break;
       }
     };
-    Serial.println("Check!");
+    client.publish(mqtt_topic_reg, dataCombineReg(string2char(userIDBuffer), string2char(stdCode), string2char(userPhone)));
     Serial.println(userIDBuffer.c_str());
     Serial.println(stdCode.c_str());
     Serial.println(userPhone.c_str());
-    client.publish(mqtt_topic_reg, dataCombineReg(string2char(userIDBuffer), string2char(stdCode), string2char(userPhone)));
     stdCode = "";
     userPhone = "";
     break;
