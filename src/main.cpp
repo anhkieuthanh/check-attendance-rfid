@@ -20,6 +20,7 @@
 #define SIZE_BUFFER 18
 #define MAX_SIZE_BLOCK 16
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 //int i = 0;
 int statusCode;
@@ -30,6 +31,12 @@ String content;
 String stdCode = "";
 String userPhone = "";
 >>>>>>> dev
+=======
+
+String stdCode = "";
+String userPhone = "";
+
+>>>>>>> ac36b23c081c33217c3e7fc0f08ff23b62274898
 char resp[30];
 byte rowPins[KEYPADROW] = {0, 1, 2, 3};
 byte colPins[KEYPADCOL] = {4, 5, 6, 7};
@@ -55,20 +62,27 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMN, LCD_ROW);
 Keypad_I2C customKeypad(makeKeymap(keys), rowPins, colPins, KEYPADROW, KEYPADCOL, I2CADDR);
 
+<<<<<<< HEAD
 //Establishing Local server at port 80 whenever required
 WebServer server(80);
 
+=======
+WebServer server(80);
+void setup_wifi();
+>>>>>>> ac36b23c081c33217c3e7fc0f08ff23b62274898
 void readingData();
 void scrollSingleLine(String fixedString, String scrolledString, int *flag);
 void writingData();
-void setup_wifi();
 void callback(char *topic, byte *payload, unsigned int length);
 void reconnect();
+<<<<<<< HEAD
 bool testWifi(void);
 void launchWeb(void);
 void setupAP(void);
 void createWebServer();
 
+=======
+>>>>>>> ac36b23c081c33217c3e7fc0f08ff23b62274898
 void setup()
 {
   setup_wifi();
@@ -83,8 +97,6 @@ void setup()
   lcd.setCursor(1, 0);
   lcd.print("Mandevices Lab");
   pinMode(BUZZ_PIN, OUTPUT);
-  pinMode(RED_PIN, OUTPUT);
-  pinMode(GREEN_PIN, OUTPUT);
   Serial.begin(9600);
   mfrc522.PCD_Init();
   Serial.println("Approach your reader card...");
@@ -95,6 +107,7 @@ void loop()
   // if (WiFi.status() != WL_CONNECTED)
   // check=client.connected();
   if (!client.connected())
+<<<<<<< HEAD
   {
     //check==0;
      for (int i = 0; i < 512; i++) 
@@ -106,6 +119,9 @@ void loop()
     // if (testWifi())
     //   client.connected();
   }
+=======
+    reconnect();
+>>>>>>> ac36b23c081c33217c3e7fc0f08ff23b62274898
   client.loop();
   if (!mfrc522.PICC_IsNewCardPresent())
   {
@@ -124,6 +140,7 @@ void loop()
 }
 void reconnect()
 {
+<<<<<<< HEAD
   int countTime = 0;
     while (!client.connected())
     {
@@ -186,9 +203,22 @@ void reconnect()
           break;
         }
     }
+=======
+  while (!client.connected())
+  {
+    Serial.print("Attempting MQTT connection...");
+    if (client.connect("ESP32",mqtt_device_status_topic,1,true,"lost" ));
+    {
+      Serial.println("connected");
+      client.subscribe(mqtt_topic_sub);
+      client.publish(mqtt_device_status_topic,"ready",true);
+    }
+    delay(500);
+>>>>>>> ac36b23c081c33217c3e7fc0f08ff23b62274898
   }
 void setup_wifi()
 {
+<<<<<<< HEAD
   // digitalWrite(RED_PIN, 1);
   // int countTime = 0;
   // Serial.print("Connecting to ");
@@ -214,6 +244,27 @@ void setup_wifi()
 //   
 //   }
  }
+=======
+  int countTime = 0;
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+    countTime++;
+    if (countTime == 10)
+      break;
+  }
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    Serial.println("");
+    Serial.println("WiFi connected");
+  }
+}
+
+>>>>>>> ac36b23c081c33217c3e7fc0f08ff23b62274898
 void readingData()
 {
   Serial.println();
@@ -255,7 +306,7 @@ void readingData()
     Serial.println(mfrc522.GetStatusCodeName(status));
     return;
   }
-  client.publish(mqtt_topic_pub, dataCombine(string2char(userid)));
+  client.publish(mqtt_topic_pub, dataCombine(string2char(userid)),true);
 }
 
 void writingData()
@@ -298,7 +349,7 @@ void writingData()
 
 void callback(char *topic, byte *payload, unsigned int length)
 {
-  const char *publishData;
+
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
@@ -333,19 +384,21 @@ void callback(char *topic, byte *payload, unsigned int length)
   {
   case 1:
     correctBuzz();
-    while (!mfrc522.PICC_IsNewCardPresent())
+    while (1)
     {
       scrollSingleLine("Message:", message, &flag);
       if (flag == 1)
         break;
     }
-    delay(2000);
     turnBackDefault();
-    oneLineBack(message, 2000);
     break;
   case 0:
     correctBuzz();
+<<<<<<< HEAD
     while (!mfrc522.PICC_IsNewCardPresent())
+=======
+    while (1)
+>>>>>>> ac36b23c081c33217c3e7fc0f08ff23b62274898
     {
       scrollSingleLine("Message:", message, &flag);
       if (flag == 1)
@@ -411,7 +464,7 @@ void callback(char *topic, byte *payload, unsigned int length)
         break;
       }
     };
-    client.publish(mqtt_topic_reg, dataCombineReg(string2char(userIDBuffer), string2char(stdCode), string2char(userPhone)));
+    client.publish(mqtt_topic_reg, dataCombineReg(string2char(userIDBuffer), string2char(stdCode), string2char(userPhone)),true);
     Serial.println(userIDBuffer.c_str());
     Serial.println(stdCode.c_str());
     Serial.println(userPhone.c_str());
@@ -440,6 +493,7 @@ bool testWifi(void)
     Serial.print("*");
     c++;
   }
+<<<<<<< HEAD
   Serial.println("");
   Serial.println("Connect timed out, opening AP");
   return false;
@@ -571,3 +625,6 @@ void createWebServer()
   }
 }
 
+=======
+}
+>>>>>>> ac36b23c081c33217c3e7fc0f08ff23b62274898

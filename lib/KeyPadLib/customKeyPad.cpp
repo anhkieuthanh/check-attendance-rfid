@@ -4,7 +4,7 @@ uint8_t stateData;
 uint8_t stateInput;
 void readKeyPad(int length, String &result)
 {
-
+    
     char key = customKeypad.waitForKey();
     char key2[2];
     key2[0] = key;
@@ -19,6 +19,7 @@ void readKeyPad(int length, String &result)
                 delay(1500);
                 stateInput = 0;
                 count = 0;
+                result ="";
                 break;
             }
             if (count == length)
