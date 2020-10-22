@@ -99,11 +99,11 @@ void reconnect()
   while (!client.connected())
   {
     Serial.print("Attempting MQTT connection...");
-    if (client.connect("ESP32","mandevices/123456/$state",1,true,"lost" ));
+    if (client.connect("ESP32",mqtt_device_status_topic,1,true,"lost" ));
     {
       Serial.println("connected");
       client.subscribe(mqtt_topic_sub);
-      client.publish("mandevices/123456/$state","ready",true);
+      client.publish(mqtt_device_status_topic,"ready",true);
     }
     delay(500);
   }

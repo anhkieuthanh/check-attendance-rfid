@@ -9,6 +9,7 @@
 #define mqtt_topic_pub "card"
 #define mqtt_topic_sub "server:response"
 #define mqtt_topic_reg "card-register"
+#define mqtt_device_status_topic "mandevices/123456/$status"
 #define mqtt_user "ryuatszf"
 #define mqtt_pwd "Y8vXAN_3iQVO"
 #define FLASH_SIZE 128
