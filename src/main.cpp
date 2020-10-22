@@ -87,11 +87,11 @@ void setup()
 
 void loop()
 {
-  if (WiFi.status() != WL_CONNECTED)
-  check=client.connected();
-  if (!check)
+  // if (WiFi.status() != WL_CONNECTED)
+  // check=client.connected();
+  if (!client.connected())
   {
-    check==0;
+    //check==0;
      for (int i = 0; i < 512; i++) 
     {
       EEPROM.write(i, 0);
