@@ -76,8 +76,6 @@ void setup()
   lcd.setCursor(1, 0);
   lcd.print("Mandevices Lab");
   pinMode(BUZZ_PIN, OUTPUT);
-  pinMode(RED_PIN, OUTPUT);
-  pinMode(GREEN_PIN, OUTPUT);
   Serial.begin(9600);
   mfrc522.PCD_Init();
   Serial.println("Approach your reader card...");
