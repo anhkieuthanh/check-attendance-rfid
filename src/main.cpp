@@ -22,7 +22,10 @@
 
 String stdCode = "";
 String userPhone = "";
-
+int statusCode;
+String st;
+String content;
+bool isMessageReceived = false;
 char resp[30];
 byte rowPins[KEYPADROW] = {0, 1, 2, 3};
 byte colPins[KEYPADCOL] = {4, 5, 6, 7};
@@ -55,15 +58,20 @@ void scrollSingleLine(String fixedString, String scrolledString, int *flag);
 void writingData();
 void callback(char *topic, byte *payload, unsigned int length);
 void reconnect();
+bool testWifi(void);
+void launchWeb(void);
+void setupAP(void);
+void createWebServer();
+
 void setup()
 {
   setup_wifi();
+  client.setKeepAlive(60);
   client.setServer(mqtt_server, mqtt_port);
   SPI.begin();
   client.setCallback(callback);
   Wire.begin(5, 17);
   customKeypad.begin();
-  customKeypad.setHoldTime(2000);
   lcd.init();
   lcd.backlight();
   lcd.setCursor(1, 0);
@@ -76,8 +84,17 @@ void setup()
 
 void loop()
 {
+  if (isMessageReceived)
+  {
+    client.publish(mqtt_topic_reg, dataCombineReg(string2char(userIDBuffer), string2char(stdCode), string2char(userPhone)), true);
+    stdCode = "";
+    userPhone = "";
+    isMessageReceived = false;
+  }
   if (!client.connected())
+  {
     reconnect();
+  }
   client.loop();
   if (!mfrc522.PICC_IsNewCardPresent())
   {
@@ -96,14 +113,30 @@ void loop()
 }
 void reconnect()
 {
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    setup_wifi();
+    if (!testWifi())
+    {
+      launchWeb();
+      setupAP();
+      while ((WiFi.status() != WL_CONNECTED))
+      {
+        Serial.print(".");
+        delay(100);
+        server.handleClient();
+      }
+    }
+  }
   while (!client.connected())
   {
     Serial.print("Attempting MQTT connection...");
-    if (client.connect("ESP32",mqtt_device_status_topic,1,true,"lost" ));
+    if (client.connect("ESP32", mqtt_user, mqtt_pwd, mqtt_device_status_topic, 1, true, "lost"))
     {
       Serial.println("connected");
       client.subscribe(mqtt_topic_sub);
-      client.publish(mqtt_device_status_topic,"ready",true);
+      client.publish(mqtt_device_status_topic, "ready", true);
+      client.setCallback(callback);
     }
     delay(500);
   }
@@ -111,9 +144,20 @@ void reconnect()
 void setup_wifi()
 {
   int countTime = 0;
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, password);
+  EEPROM.begin(512); //Initialasing EEPROM
+  delay(10);
+  Serial.println("Reading EEPROM ssid");
+  String esid = "";
+  for (int i = 0; i < 32; ++i)
+  {
+    esid += char(EEPROM.read(i));
+  }
+  String epass = "";
+  for (int i = 32; i < 96; ++i)
+  {
+    epass += char(EEPROM.read(i));
+  }
+  WiFi.begin(esid.c_str(), epass.c_str());
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
@@ -170,7 +214,7 @@ void readingData()
     Serial.println(mfrc522.GetStatusCodeName(status));
     return;
   }
-  client.publish(mqtt_topic_pub, dataCombine(string2char(userid)),true);
+  client.publish(mqtt_topic_pub, dataCombine(string2char(userid)), true);
 }
 
 void writingData()
@@ -237,6 +281,7 @@ void callback(char *topic, byte *payload, unsigned int length)
 
   int flag = 0;
   int commonCase;
+  bool inputState = false;
   if (code == 2 || code == 6 || code == 8 || code == 9 || code == 10)
     commonCase = 1;
   else if (code == 7)
@@ -246,6 +291,7 @@ void callback(char *topic, byte *payload, unsigned int length)
   switch (commonCase)
   {
   case 1:
+  {
     correctBuzz();
     while (1)
     {
@@ -255,7 +301,9 @@ void callback(char *topic, byte *payload, unsigned int length)
     }
     turnBackDefault();
     break;
+  }
   case 0:
+  {
     correctBuzz();
     while (1)
     {
@@ -279,7 +327,7 @@ void callback(char *topic, byte *payload, unsigned int length)
         stateInput = 1;
         stateData = 1;
         count = 0;
-        while (1)
+        while (!inputState)
         {
           readKeyPad(8, stdCode);
           if (stateInput == 0)
@@ -294,25 +342,27 @@ void callback(char *topic, byte *payload, unsigned int length)
 
             oneLineFix("Nhap sdt:");
             stateData = 1;
-            break;
+            inputState = true;
           }
         }
         count = 0;
-        while (1)
+        inputState = false;
+        while (!inputState)
         {
           readKeyPad(9, userPhone);
           if (stateInput == 0)
           {
-            oneLineFix("Nhap sdt");
+            oneLineFix("Nhap sdt:");
             stateInput = 1;
           }
           if (stateData == 2)
           {
             oneLineFix("Done!");
             oneLineBack("Sent to server", 1000);
+            isMessageReceived = true;
             stateData = 1;
             delay(2000);
-            break;
+            inputState = true;
           }
         }
         break;
@@ -323,16 +373,157 @@ void callback(char *topic, byte *payload, unsigned int length)
         break;
       }
     };
-    client.publish(mqtt_topic_reg, dataCombineReg(string2char(userIDBuffer), string2char(stdCode), string2char(userPhone)),true);
-    Serial.println(userIDBuffer.c_str());
-    Serial.println(stdCode.c_str());
-    Serial.println(userPhone.c_str());
-    stdCode = "";
-    userPhone = "";
     break;
+  }
   default:
+  {
     wrongBuzz();
     oneLineBack("Undefined Error", 1000);
     break;
+  }
+  }
+}
+bool testWifi(void)
+{
+  int c = 0;
+  Serial.println("Waiting for Wifi to connect");
+  while (c < 20)
+  {
+    if (WiFi.status() == WL_CONNECTED)
+    {
+      return true;
+    }
+    delay(500);
+    Serial.print("*");
+    c++;
+  }
+  Serial.println("");
+  Serial.println("Connect timed out, opening AP");
+  return false;
+}
+void launchWeb()
+{
+  Serial.println("");
+  if (WiFi.status() == WL_CONNECTED)
+    Serial.println("WiFi connected");
+  Serial.print("Local IP: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("SoftAP IP: ");
+  Serial.println(WiFi.softAPIP());
+  createWebServer();
+  // Start the server
+  server.begin();
+  Serial.println("Server started");
+}
+void setupAP()
+{
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  delay(100);
+  int n = WiFi.scanNetworks();
+  Serial.println("scan done");
+  if (n == 0)
+    Serial.println("no networks found");
+  else
+  {
+    Serial.print(n);
+    Serial.println(" networks found");
+    for (int i = 0; i < n; ++i)
+    {
+      // Print SSID and RSSI for each network found
+      Serial.print(i + 1);
+      Serial.print(": ");
+      Serial.print(WiFi.SSID(i));
+      Serial.print(" (");
+      Serial.print(WiFi.RSSI(i));
+      Serial.print(")");
+      Serial.println((WiFi.encryptionType(i) == 7) ? " " : "*");
+      delay(10);
+    }
+  }
+  Serial.println("");
+  st = "<ol>";
+  for (int i = 0; i < n; ++i)
+  {
+    // Print SSID and RSSI for each network found
+    st += "<li>";
+    st += WiFi.SSID(i);
+    st += " (";
+    st += WiFi.RSSI(i);
+    st += ")";
+    st += (WiFi.encryptionType(i) == 7) ? " " : "*";
+    st += "</li>";
+  }
+  st += "</ol>";
+  delay(100);
+  WiFi.softAP("MandevicesESP", "");
+  Serial.println("softap");
+  launchWeb();
+  Serial.println("over");
+}
+void createWebServer()
+{
+  {
+    server.on("/", []() {
+      IPAddress ip = WiFi.softAPIP();
+      String ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' + String(ip[2]) + '.' + String(ip[3]);
+      content = "<!DOCTYPE HTML>\r\n<html>Hello from ESP8266 at ";
+      content += "<form action=\"/scan\" method=\"POST\"><input type=\"submit\" value=\"scan\"></form>";
+      content += ipStr;
+      content += "<p>";
+      content += st;
+      content += "</p><form method='get' action='setting'><label>SSID: </label><input name='ssid' length=32><input name='pass' length=64><input type='submit'></form>";
+      content += "</html>";
+      server.send(200, "text/html", content);
+    });
+    server.on("/scan", []() {
+      //setupAP();
+      IPAddress ip = WiFi.softAPIP();
+      String ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' + String(ip[2]) + '.' + String(ip[3]);
+      content = "<!DOCTYPE HTML>\r\n<html>go back";
+      server.send(200, "text/html", content);
+    });
+    server.on("/setting", []() {
+      String qsid = server.arg("ssid");
+      String qpass = server.arg("pass");
+      if (qsid.length() > 0 && qpass.length() > 0)
+      {
+        Serial.println("clearing eeprom");
+        for (int i = 0; i < 96; ++i)
+        {
+          EEPROM.write(i, 0);
+        }
+        Serial.println(qsid);
+        Serial.println("");
+        Serial.println(qpass);
+        Serial.println("");
+        Serial.println("writing eeprom ssid:");
+        for (int i = 0; i < qsid.length(); ++i)
+        {
+          EEPROM.write(i, qsid[i]);
+          Serial.print("Wrote: ");
+          Serial.println(qsid[i]);
+        }
+        Serial.println("writing eeprom pass:");
+        for (int i = 0; i < qpass.length(); ++i)
+        {
+          EEPROM.write(32 + i, qpass[i]);
+          Serial.print("Wrote: ");
+          Serial.println(qpass[i]);
+        }
+        EEPROM.commit();
+        content = "{\"Success\"\"saved to eeprom... reset to boot into new wifi\"}";
+        statusCode = 200;
+        ESP.restart();
+      }
+      else
+      {
+        content = "{\"Error:404 not found\"}";
+        statusCode = 404;
+        Serial.println("Sending 404");
+      }
+      server.sendHeader("Access-Control-Allow-Origin", "*");
+      server.send(statusCode, "application/json", content);
+    });
   }
 }
