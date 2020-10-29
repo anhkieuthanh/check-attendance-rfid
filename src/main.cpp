@@ -15,9 +15,9 @@ void callback();
 void print_wakeup_reason();
 void print_wakeup_touchpad();
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   pinMode(LED_BUILTIN,OUTPUT);
-  Serial.printf("Blink Led");
+  Serial.println("Blink Led");
   for (int i=0;i<3;i++)
   {
     digitalWrite(LED_BUILTIN,HIGH);
