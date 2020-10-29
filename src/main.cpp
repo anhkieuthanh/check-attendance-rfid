@@ -1,96 +1,90 @@
-// #include <ESP8266WiFi.h>
-// #include<ESP8266WebServer.h>
-// #include<WiFiClient.h>
-// #include<EEPROM.h>
-// //Variables
-// const char *ssid = "Viet Quy";
-// const char *passphrase = "vietquy160591";
-// //Macro
-// void light_sleep();
-// void setup()
-// {
-//   Serial.begin(9600);
-//   WiFi.begin(ssid,passphrase);
-//   Serial.println("Connecting");
-//   while ((WiFi.status() != WL_CONNECTED))
-//   {
-//     Serial.printf(".");
-//     delay(100);
-//   }
-//   Serial.println("Connected");
-// }
-// void loop()
-// {
-//    if ((WiFi.status() == WL_CONNECTED))
-//   {
-//     for (int i = 0; i <3 ; i++)
-//     {
-//       digitalWrite(LED_BUILTIN, HIGH);
-//       delay(1000);
-//       digitalWrite(LED_BUILTIN, LOW);
-//       delay(1000);
-//     }
-//   }
-//   Serial.println("Go to sleep now");
-//   light_sleep();
-//   delay(200);
-//   Serial.println("Wake up");
-//   WiFi.begin(ssid,passphrase);
-//   while ((WiFi.status() != WL_CONNECTED))
-//   {
-//     Serial.printf(".");
-//     delay(100);
-//   }
-//   Serial.println("Connected");
-  
-// }
-// void light_sleep()
-// {
-//   wifi_station_disconnect();
-//   wifi_set_opmode_current(NULL_MODE);
-//   wifi_fpm_set_sleep_type(LIGHT_SLEEP_T);
-//   wifi_fpm_open();
-//   gpio_pin_wakeup_enable(GPIO_ID_PIN(4),GPIO_PIN_INTR_HILEVEL);
-//   wifi_fpm_do_sleep(0xFFFFFFF);
-
-// }
+#include <WiFi.h>
+#include<WebServer.h>
 #include <Arduino.h>
+//Variables
 hw_timer_t * timer = NULL;
-
-void onTimer();
-void endTimer();
-void startTimer();
-
-void onTimer(){
-  static unsigned int counter = 1;
-  
-  Serial.print("onTimer ");
-  Serial.print(counter);
-  Serial.print(" at ");
-  Serial.print(millis());
-  Serial.println(" ms");
-
-  if (counter == 10)
-    endTimer();
-
-  counter++;
-}
-
-void startTimer() {
-  timer = timerBegin(0, 80, true); // timer_id = 0; divider=80; countUp = true;
-  timerAttachInterrupt(timer, &onTimer, true); // edge = true
-  timerAlarmWrite(timer, 1000000, true);  //1000 ms
-  timerAlarmEnable(timer);
-}
-
-void endTimer() {
-  timerEnd(timer);
-  timer = NULL; 
-}
-
+#define Threshold 40 /* Greater the value, more the sensitivity */
+RTC_DATA_ATTR int bootCount = 0;
+touch_pad_t touchPin;
+const char ssid ="Viet Quy";
+const char passphrase="vietquy160591";
+//Functions
+void setTimer();
+void sleepMode();
+void callBack();
+void print_wakeup_reason();
+void print_wakeup_touchpad();
 void setup() {
   Serial.begin(115200);
-  startTimer();
+  WiFi.begin(ssid,passphrase);
+  
+
+  setTimer();
+  timerAlarmEnable(timer);
+  Serial.println("start timer");
 }
 
-void loop() {}
+void loop() {
+}
+
+void setTimer()
+{
+  timer = timerBegin(0,80,true);
+  timerAttachInterrupt(timer,&sleepMode,true);
+  timerAlarmWrite(timer,10000000,true);
+}
+void sleepMode()
+{
+  ++bootCount;
+  Serial.println("Boot number: " + String(bootCount));
+
+  //Print the wakeup reason for ESP32 and touchpad too
+  print_wakeup_reason();
+  print_wakeup_touchpad();
+
+  //Setup interrupt on Touch Pad 3 (GPIO15)
+  touchAttachInterrupt(T3, callback, Threshold);
+
+  //Configure Touchpad as wakeup source
+  esp_sleep_enable_touchpad_wakeup();
+
+  //Go to sleep now
+  Serial.println("Going to sleep now");
+  esp_deep_sleep_start();
+}
+void print_wakeup_touchpad(){
+  touchPin = esp_sleep_get_touchpad_wakeup_status();
+
+  switch(touchPin)
+  {
+    case 0  : Serial.println("Touch detected on GPIO 4"); break;
+    case 1  : Serial.println("Touch detected on GPIO 0"); break;
+    case 2  : Serial.println("Touch detected on GPIO 2"); break;
+    case 3  : Serial.println("Touch detected on GPIO 15"); break;
+    case 4  : Serial.println("Touch detected on GPIO 13"); break;
+    case 5  : Serial.println("Touch detected on GPIO 12"); break;
+    case 6  : Serial.println("Touch detected on GPIO 14"); break;
+    case 7  : Serial.println("Touch detected on GPIO 27"); break;
+    case 8  : Serial.println("Touch detected on GPIO 33"); break;
+    case 9  : Serial.println("Touch detected on GPIO 32"); break;
+    default : Serial.println("Wakeup not by touchpad"); break;
+  }
+}
+void print_wakeup_reason(){
+  esp_sleep_wakeup_cause_t wakeup_reason;
+
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  switch(wakeup_reason)
+  {
+    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+    case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
+    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
+    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
+    default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+  }
+}
+void callback(){
+  //placeholder callback function
+}
