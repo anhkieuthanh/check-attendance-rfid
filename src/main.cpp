@@ -6,8 +6,8 @@ hw_timer_t * timer = NULL;
 #define Threshold 40 /* Greater the value, more the sensitivity */
 RTC_DATA_ATTR int bootCount = 0;
 touch_pad_t touchPin;
-const char ssid ="Viet Quy";
-const char passphrase="vietquy160591";
+const char ssid = "Viet Quy";
+const char passphrase = "vietquy160591";
 //Functions
 void setTimer();
 void sleepMode();
@@ -17,8 +17,12 @@ void print_wakeup_touchpad();
 void setup() {
   Serial.begin(115200);
   WiFi.begin(ssid,passphrase);
-  
-
+  While (WiFi.status != WL_CONNECTED)
+  {
+    Serial.print(".");
+    delay(10);
+  }
+  Serial.println("Connected");
   setTimer();
   timerAlarmEnable(timer);
   Serial.println("start timer");
