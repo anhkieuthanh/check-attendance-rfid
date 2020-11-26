@@ -14,11 +14,14 @@
 #include "handle.h"
 #include "config.h"
 #include "customKeyPad.h"
+#include "esp32/ulp.h"
+#include "driver/rtc_io.h"
 
 #define SS_PIN 21
 #define RST_PIN 22
 #define SIZE_BUFFER 18
 #define MAX_SIZE_BLOCK 16
+#define Threshold 40
 
 String stdCode = "";
 String userPhone = "";
@@ -26,6 +29,7 @@ int statusCode;
 String st;
 String content;
 bool isMessageReceived = false;
+bool checkSleep=false;
 char resp[30];
 byte rowPins[KEYPADROW] = {0, 1, 2, 3};
 byte colPins[KEYPADCOL] = {4, 5, 6, 7};
@@ -52,6 +56,8 @@ LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMN, LCD_ROW);
 Keypad_I2C customKeypad(makeKeymap(keys), rowPins, colPins, KEYPADROW, KEYPADCOL, I2CADDR);
 
 WebServer server(80);
+
+hw_timer_t *timer=NULL;
 void setup_wifi();
 void readingData();
 void scrollSingleLine(String fixedString, String scrolledString, int *flag);
@@ -62,6 +68,9 @@ bool testWifi(void);
 void launchWeb(void);
 void setupAP(void);
 void createWebServer();
+void sleepMode();
+void rtc_setPins();
+void setTimer();
 
 void setup()
 {
@@ -76,6 +85,8 @@ void setup()
   lcd.backlight();
   lcd.setCursor(1, 0);
   lcd.print("Mandevices Lab");
+  rtc_gpio_set_level(GPIO_NUM_15,0x00);
+  rtc_gpio_set_level(GPIO_NUM_0,0x01);
   pinMode(BUZZ_PIN, OUTPUT);
   Serial.begin(9600);
   mfrc522.PCD_Init();
@@ -98,6 +109,13 @@ void loop()
   client.loop();
   if (!mfrc522.PICC_IsNewCardPresent())
   {
+    if (!checkSleep)
+    {
+      setTimer();
+      timerAlarmEnable(timer);
+      Serial.println("Start timer");
+      checkSleep=true;
+    }
     return;
   }
   // Select a card
@@ -110,6 +128,7 @@ void loop()
   mfrc522.PICC_HaltA();
   // "stop" the encryption of the PCD, it must be called after communication with authentication, otherwise new communications can not be initiated
   mfrc522.PCD_StopCrypto1();
+  checkSleep=false;
 }
 void reconnect()
 {
@@ -405,7 +424,7 @@ void launchWeb()
 {
   Serial.println("");
   if (WiFi.status() == WL_CONNECTED)
-    Serial.println("WiFi connected");
+  Serial.println("WiFi connected");
   Serial.print("Local IP: ");
   Serial.println(WiFi.localIP());
   Serial.print("SoftAP IP: ");
@@ -526,4 +545,43 @@ void createWebServer()
       server.send(statusCode, "application/json", content);
     });
   }
+}
+void callback1()
+{
+}
+void rtc_setPins()
+{
+  rtc_gpio_init(GPIO_NUM_0);
+  rtc_gpio_init(GPIO_NUM_15);
+  
+  rtc_gpio_set_direction(GPIO_NUM_15, RTC_GPIO_MODE_OUTPUT_ONLY);
+  rtc_gpio_set_direction(GPIO_NUM_0, RTC_GPIO_MODE_OUTPUT_ONLY);
+
+  rtc_gpio_set_level(GPIO_NUM_15,0x01);
+  rtc_gpio_set_level(GPIO_NUM_0,0x00);
+
+
+ 
+}
+void setTimer()
+{
+  timer = timerBegin(0,80,true);
+  timerAttachInterrupt(timer,&sleepMode,true);
+  timerAlarmWrite(timer,30000000,true);
+}
+void sleepMode()
+{
+   lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Sleeping");
+  //Setup interrupt on Touch Pad 3 (GPIO15)
+  touchAttachInterrupt(T5, callback1, Threshold);
+
+  //Configure Touchpad as wakeup source
+  esp_sleep_enable_touchpad_wakeup();
+
+  //Go to sleep now
+  rtc_setPins();
+  Serial.println("Going to sleep now");
+  esp_deep_sleep_start();
 }
