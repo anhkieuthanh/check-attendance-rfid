@@ -58,6 +58,7 @@ Keypad_I2C customKeypad(makeKeymap(keys), rowPins, colPins, KEYPADROW, KEYPADCOL
 WebServer server(80);
 
 hw_timer_t *timer=NULL;
+
 void setup_wifi();
 void readingData();
 void scrollSingleLine(String fixedString, String scrolledString, int *flag);
@@ -74,20 +75,29 @@ void setTimer();
 
 void setup()
 {
+  
+  //Connect to server
   setup_wifi();
   client.setKeepAlive(60);
   client.setServer(mqtt_server, mqtt_port);
+  //Initialize SPI protocol
   SPI.begin();
+
   client.setCallback(callback);
   Wire.begin(5, 17);
+  //Initialize Keypad 4x4
   customKeypad.begin();
+  //Initialize LCD
   lcd.init();
   lcd.backlight();
   lcd.setCursor(1, 0);
   lcd.print("Mandevices Lab");
+  //set pins for ULP
   rtc_gpio_set_level(GPIO_NUM_15,0x00);
   rtc_gpio_set_level(GPIO_NUM_0,0x01);
+  //set pin for horn
   pinMode(BUZZ_PIN, OUTPUT);
+  //Initialize RFID module
   Serial.begin(9600);
   mfrc522.PCD_Init();
   Serial.println("Approach your reader card...");
@@ -109,6 +119,7 @@ void loop()
   client.loop();
   if (!mfrc522.PICC_IsNewCardPresent())
   {
+  //if no card is recognized, start Timer for Deep-sleep Mode
     if (!checkSleep)
     {
       setTimer();
@@ -549,11 +560,13 @@ void createWebServer()
 void callback1()
 {
 }
+//when esp32 is in deep-sleep mode, we use ULP coprocessor
 void rtc_setPins()
 {
+//set pins used by ULP
   rtc_gpio_init(GPIO_NUM_0);
   rtc_gpio_init(GPIO_NUM_15);
-  
+//set mode for pins  
   rtc_gpio_set_direction(GPIO_NUM_15, RTC_GPIO_MODE_OUTPUT_ONLY);
   rtc_gpio_set_direction(GPIO_NUM_0, RTC_GPIO_MODE_OUTPUT_ONLY);
 
@@ -567,11 +580,11 @@ void setTimer()
 {
   timer = timerBegin(0,80,true);
   timerAttachInterrupt(timer,&sleepMode,true);
-  timerAlarmWrite(timer,30000000,true);
+  timerAlarmWrite(timer,300000000,true);
 }
 void sleepMode()
 {
-   lcd.clear();
+  lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("Sleeping");
   //Setup interrupt on Touch Pad 3 (GPIO15)
