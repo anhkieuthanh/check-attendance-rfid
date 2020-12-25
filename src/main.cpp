@@ -129,12 +129,14 @@ void loop()
     }
     return;
   }
+  
   // Select a card
   if (!mfrc522.PICC_ReadCardSerial())
   {
     return;
   }
   readingData();
+  correctBuzz();
   //instructs the PICC when in the ACTIVE state to go to a "STOP" state
   mfrc522.PICC_HaltA();
   // "stop" the encryption of the PCD, it must be called after communication with authentication, otherwise new communications can not be initiated
@@ -245,6 +247,7 @@ void readingData()
     return;
   }
   client.publish(mqtt_topic_pub, dataCombine(string2char(userid)), true);
+  Serial.println(userid);
 }
 
 void writingData()

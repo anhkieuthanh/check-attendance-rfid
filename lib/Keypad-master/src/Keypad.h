@@ -50,6 +50,9 @@ do {							 \
 		pinMode(_pin, _mode);	 \
 }while(0)
 #endif
+#ifndef BUZZ_H
+#include "buzz.h"
+#endif
 
 
 #define OPEN LOW
