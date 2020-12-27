@@ -16,6 +16,7 @@
 #include "customKeyPad.h"
 #include "esp32/ulp.h"
 #include "driver/rtc_io.h"
+#include "time.h"
 
 #define SS_PIN 21
 #define RST_PIN 22
