@@ -3,3 +3,4 @@
 
 void correctBuzz();
 void wrongBuzz();
+void pressBuzz();

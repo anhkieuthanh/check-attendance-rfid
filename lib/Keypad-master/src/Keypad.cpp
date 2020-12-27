@@ -59,7 +59,7 @@ char Keypad::getKey() {
 
 	if (getKeys() && key[0].stateChanged && (key[0].kstate==PRESSED))
 	{
-		correctBuzz();
+		pressBuzz();
 		return key[0].kchar;
 	}
 	single_key = false;

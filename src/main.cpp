@@ -93,6 +93,7 @@ void setup()
   lcd.setCursor(1, 0);
   lcd.print("Mandevices Lab");
   //set pins for ULP
+  rtc_setPins();
   rtc_gpio_set_level(GPIO_NUM_15,0x00);
   rtc_gpio_set_level(GPIO_NUM_0,0x01);
   //set pin for horn
@@ -115,6 +116,7 @@ void loop()
   if (!client.connected())
   {
     reconnect();
+    //scrollSingleLine("","Connecting...");
   }
   client.loop();
   if (!mfrc522.PICC_IsNewCardPresent())
@@ -398,7 +400,9 @@ void callback(char *topic, byte *payload, unsigned int length)
             inputState = true;
           }
         }
+        if (!inputState)
         break;
+      break;
       }
       if (choice == 'B')
       {
@@ -573,10 +577,6 @@ void rtc_setPins()
   rtc_gpio_set_direction(GPIO_NUM_15, RTC_GPIO_MODE_OUTPUT_ONLY);
   rtc_gpio_set_direction(GPIO_NUM_0, RTC_GPIO_MODE_OUTPUT_ONLY);
 
-  rtc_gpio_set_level(GPIO_NUM_15,0x01);
-  rtc_gpio_set_level(GPIO_NUM_0,0x00);
-
-
  
 }
 void setTimer()
@@ -597,7 +597,10 @@ void sleepMode()
   esp_sleep_enable_touchpad_wakeup();
 
   //Go to sleep now
-  rtc_setPins();
+  //turn on the LED red, turn off the Blue LED
+  rtc_gpio_set_level(GPIO_NUM_15,0x01);
+  rtc_gpio_set_level(GPIO_NUM_0,0x00);
+
   Serial.println("Going to sleep now");
   esp_deep_sleep_start();
 }

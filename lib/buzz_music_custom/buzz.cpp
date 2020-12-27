@@ -23,3 +23,9 @@ void wrongBuzz()
     delay(300);
     digitalWrite(BUZZ_PIN, 0);
 }
+void pressBuzz()
+{
+    digitalWrite(BUZZ_PIN,1);
+    delay(100);
+    digitalWrite(BUZZ_PIN,0);
+}
