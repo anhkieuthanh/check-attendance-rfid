@@ -39,6 +39,10 @@ char keys[KEYPADROW][KEYPADCOL] = {
     {'4', '5', '6', 'B'},
     {'7', '8', '9', 'C'},
     {'*', '0', '#', 'D'}};
+char monthOfTheYear[12][10]={"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
+const char* ntpServer="pool.ntp.org";
+const long gmtOffset_sec=25200;
+const int   daylightOffset_sec = 3600;
 WiFiClient espClient;
 PubSubClient client(espClient);
 NTPtime NTPch("ch.pool.ntp.org");
@@ -73,6 +77,7 @@ void createWebServer();
 void sleepMode();
 void rtc_setPins();
 void setTimer();
+void printLocalTime();
 
 void setup()
 {
@@ -93,6 +98,9 @@ void setup()
   lcd.backlight();
   lcd.setCursor(1, 0);
   lcd.print("Mandevices Lab");
+  //set up for ntp time
+  configTime(gmtOffset_sec,daylightOffset_sec,ntpServer);
+  printLocalTime();
   //set pins for ULP
   rtc_setPins();
   rtc_gpio_set_level(GPIO_NUM_15,0x00);
@@ -120,6 +128,9 @@ void loop()
     //scrollSingleLine("","Connecting...");
   }
   client.loop();
+
+  printLocalTime();
+
   if (!mfrc522.PICC_IsNewCardPresent())
   {
   //if no card is recognized, start Timer for Deep-sleep Mode
@@ -604,4 +615,28 @@ void sleepMode()
 
   Serial.println("Going to sleep now");
   esp_deep_sleep_start();
+}
+void printLocalTime()
+{
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  lcd.setCursor(0,1);
+  // lcd.print(monthOfTheYear[timeinfo.tm_mon]);
+  // lcd.print(" ");
+  // lcd.print(timeinfo.tm_mday);
+  // lcd.print(" ");
+  // lcd.print(timeinfo.tm_hour);
+  // lcd.print(":");
+  // lcd.print(timeinfo.tm_min);
+  // lcd.print(":");
+  // if (timeinfo.tm_sec<10)
+  // {
+  // lcd.print("0");
+  // lcd.print(timeinfo.tm_sec);
+  lcd.print(monthOfTheYear[timeinfo.tm_mon]);
+  lcd.print(" ");
+  lcd.print(&timeinfo, "%d %H:%M:%S");
 }
