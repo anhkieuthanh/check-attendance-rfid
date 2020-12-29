@@ -12,3 +12,5 @@ void twoLineBack(String text1, String text2, int timeDelay);
 void oneLineFix(String text);
 void scrollSingleLine(String fixedString, String scrolledString, int *flag);
 void turnBackDefault();
+void connectToWifi();
+void connectToServer();

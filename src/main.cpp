@@ -124,8 +124,8 @@ void loop()
   }
   if (!client.connected())
   {
-    reconnect();
     //scrollSingleLine("","Connecting...");
+    reconnect();
   }
   client.loop();
 
@@ -164,6 +164,7 @@ void reconnect()
     setup_wifi();
     if (!testWifi())
     {
+      connectToWifi();
       launchWeb();
       setupAP();
       while ((WiFi.status() != WL_CONNECTED))
@@ -179,6 +180,9 @@ void reconnect()
     Serial.print("Attempting MQTT connection...");
     if (client.connect("ESP32", mqtt_user, mqtt_pwd, mqtt_device_status_topic, 1, true, "lost"))
     {
+      lcd.clear();
+      lcd.setCursor(4,0);
+      lcd.print("Connected");
       Serial.println("connected");
       client.subscribe(mqtt_topic_sub);
       client.publish(mqtt_device_status_topic, "ready", true);
@@ -216,6 +220,10 @@ void setup_wifi()
   {
     Serial.println("");
     Serial.println("WiFi connected");
+    lcd.clear();
+    lcd.print(" Wifi Connected ");
+    delay(1000);
+    turnBackDefault();
   }
 }
 
@@ -440,6 +448,10 @@ bool testWifi(void)
   {
     if (WiFi.status() == WL_CONNECTED)
     {
+      lcd.clear();
+      lcd.print(" Wifi Connected ");
+      delay(1000);
+      turnBackDefault();
       return true;
     }
     delay(500);
@@ -454,7 +466,13 @@ void launchWeb()
 {
   Serial.println("");
   if (WiFi.status() == WL_CONNECTED)
-  Serial.println("WiFi connected");
+  {
+    Serial.println("WiFi connected");
+    lcd.clear();
+    lcd.print(" Wifi Connected ");
+    delay(1000);
+    turnBackDefault();
+  }
   Serial.print("Local IP: ");
   Serial.println(WiFi.localIP());
   Serial.print("SoftAP IP: ");
@@ -595,7 +613,7 @@ void setTimer()
 {
   timer = timerBegin(0,80,true);
   timerAttachInterrupt(timer,&sleepMode,true);
-  timerAlarmWrite(timer,300000000,true);
+  timerAlarmWrite(timer,30000000,true);
 }
 void sleepMode()
 {
@@ -624,18 +642,6 @@ void printLocalTime()
     return;
   }
   lcd.setCursor(0,1);
-  // lcd.print(monthOfTheYear[timeinfo.tm_mon]);
-  // lcd.print(" ");
-  // lcd.print(timeinfo.tm_mday);
-  // lcd.print(" ");
-  // lcd.print(timeinfo.tm_hour);
-  // lcd.print(":");
-  // lcd.print(timeinfo.tm_min);
-  // lcd.print(":");
-  // if (timeinfo.tm_sec<10)
-  // {
-  // lcd.print("0");
-  // lcd.print(timeinfo.tm_sec);
   lcd.print(monthOfTheYear[timeinfo.tm_mon]);
   lcd.print(" ");
   lcd.print(&timeinfo, "%d %H:%M:%S");

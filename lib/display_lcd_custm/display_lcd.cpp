@@ -68,3 +68,17 @@ void oneLineFix(String text)
   else
     lcd.print(text);
 }
+void connectToServer()
+{
+  lcd.setCursor(0,0);
+  lcd.print(" connecting to ");
+  lcd.setCursor(0,0);
+  lcd.print("server...");
+}
+void connectToWifi()
+{
+  lcd.setCursor(0,0);
+  lcd.print(" connecting to ");
+  lcd.setCursor(0,0);
+  lcd.print("Wifi...");
+}
