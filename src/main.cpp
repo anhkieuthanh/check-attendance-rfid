@@ -183,6 +183,8 @@ void reconnect()
       lcd.clear();
       lcd.setCursor(4,0);
       lcd.print("Connected");
+      delay(1000);
+      turnBackDefault();
       Serial.println("connected");
       client.subscribe(mqtt_topic_sub);
       client.publish(mqtt_device_status_topic, "ready", true);
@@ -202,11 +204,13 @@ void setup_wifi()
   {
     esid += char(EEPROM.read(i));
   }
+  //esid="Viet Quy";
   String epass = "";
   for (int i = 32; i < 96; ++i)
   {
     epass += char(EEPROM.read(i));
   }
+  //epass="vietquy160591";
   WiFi.begin(esid.c_str(), epass.c_str());
   while (WiFi.status() != WL_CONNECTED)
   {
@@ -404,7 +408,7 @@ void callback(char *topic, byte *payload, unsigned int length)
         inputState = false;
         while (!inputState)
         {
-          readKeyPad(9, userPhone);
+          readKeyPad(10, userPhone);
           if (stateInput == 0)
           {
             oneLineFix("Nhap sdt:");
@@ -613,13 +617,13 @@ void setTimer()
 {
   timer = timerBegin(0,80,true);
   timerAttachInterrupt(timer,&sleepMode,true);
-  timerAlarmWrite(timer,30000000,true);
+  timerAlarmWrite(timer,300000000,true);
 }
 void sleepMode()
 {
   lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print("Sleeping");
+  lcd.setCursor(4,0);
+  lcd.print("Sleeping...");
   //Setup interrupt on Touch Pad 3 (GPIO15)
   touchAttachInterrupt(T5, callback1, Threshold);
 
